@@ -1,28 +1,111 @@
-# Node and Express Tutorial
+#### 150. [Intro](#150)
 
-#### Node Course
+#### 151. [Setup](#151)
 
-[Node Tutorial and Projects Course](https://www.udemy.com/course/nodejs-tutorial-and-projects-course/?referralCode=E94792BEAE9ADD204BC7)
+#### 152. [Controllers](#152)
 
-#### Support
+#### 153. [Postman Setup](#153)
 
-Find the App Useful? [You can always buy me a coffee](https://www.buymeacoffee.com/johnsmilga)
+#### 154. [Validate Username and Password](#154)
 
-#### Contents
+#### 155. [JWT - Overview](#155)
 
-1. Node Tutorial
-2. Express Tutorial
-3. Task Manager (MongoDB, Mongoose)
-4. Store API
-5. JWT Basics
-6. Jobs API
+#### 156. [JWT - Structure](#156)
 
-#### Course Exclusive
+#### 157. [JSONWEBTOKEN Package](#157)
 
-[Node Tutorial and Projects Course](https://www.udemy.com/course/nodejs-tutorial-and-projects-course/?referralCode=E94792BEAE9ADD204BC7)
+#### 158. [Sign JWT](#158)
 
-7. File Upload (local and cloudinary)
-8. Send Email (nodemailer,ethereal and sendgrid )
-9. Stripe Payment
-10. E-Commerce API
-11. Auth Workflow (verify email, reset password)
+#### 159. [Bearer Token - Overview](#159)
+
+#### 160. [Send Bearer Token](#160)
+
+#### 161. [Check Auth Header](#161)
+
+#### 162. [Verify Token](#162)
+
+#### 163. [Auth Middleware Setup](#163)
+
+#### 164. [Auth Middleware Complete](#164)
+
+#### 165. [More Error Classes](#165)
+
+#### 166. [Status Codes](#166)
+
+#### 167. [More Refactor - Complete App](#167)
+
+---
+
+<br>
+
+### 150. Intro<a id='150'></a>
+
+<br>
+
+### 151. Setup<a id='151'></a>
+
+<br>
+
+### 152. Controllers<a id='152'></a>
+
+<br>
+
+### 153. Postman Setup<a id='153'></a>
+
+<br>
+
+### 154. Validate Username and Password<a id='154'></a>
+
+<br>
+
+### 155. JWT - Overview<a id='155'></a>
+
+<br>
+
+### 156. JWT - Structure<a id='156'></a>
+
+<br>
+
+### 157. JSONWEBTOKEN Package<a id='157'></a>
+
+<br>
+
+### 158. Sign JWT<a id='158'></a>
+
+<br>
+
+### 159. Bearer Token - Overview<a id='159'></a>
+
+<br>
+
+### 160. Send Bearer Token<a id='160'></a>
+
+<br>
+
+### 161. Check Auth Header<a id='161'></a>
+
+<br>
+
+### 162. Verify Token<a id='162'></a>
+
+<br>
+
+### 163. Auth Middleware Setup<a id='163'></a>
+
+<br>
+
+### 164. Auth Middleware Complete<a id='164'></a>
+
+<br>
+
+### 165. More Error Classes<a id='165'></a>
+
+<br>
+
+### 166. Status Codes<a id='166'></a>
+
+<br>
+
+### 167. More Refactor - Complete App<a id='167'></a>
+
+<br>

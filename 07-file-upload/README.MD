@@ -1,28 +1,89 @@
-# Node and Express Tutorial
+#### 243. [Intro](#243)
 
-#### Node Course
+#### 244. [Setup](#244)
 
-[Node Tutorial and Projects Course](https://www.udemy.com/course/nodejs-tutorial-and-projects-course/?referralCode=E94792BEAE9ADD204BC7)
+#### 245. [Product Model](#245)
 
-#### Support
+#### 246. [Basic Structure](#246)
 
-Find the App Useful? [You can always buy me a coffee](https://www.buymeacoffee.com/johnsmilga)
+#### 247. [Postman Setup](#247)
 
-#### Contents
+#### 248. [Create Product (Fail)](#248)
 
-1. Node Tutorial
-2. Express Tutorial
-3. Task Manager (MongoDB, Mongoose)
-4. Store API
-5. JWT Basics
-6. Jobs API
+#### 249. [Upload Image - Postman](#249)
 
-#### Course Exclusive
+#### 250. [EXPRESS-FILEUPLOAD Package](#250)
 
-[Node Tutorial and Projects Course](https://www.udemy.com/course/nodejs-tutorial-and-projects-course/?referralCode=E94792BEAE9ADD204BC7)
+#### 251. [Complete File Upload](#251)
 
-7. File Upload (local and cloudinary)
-8. Send Email (nodemailer,ethereal and sendgrid )
-9. Stripe Payment
-10. E-Commerce API
-11. Auth Workflow (verify email, reset password)
+#### 252. [Additional Checks](#252)
+
+#### 253. [Cloudinary Intro](#253)
+
+#### 254. [Cloudinary Setup](#254)
+
+#### 255. [Upload Image to Cloudinary](#255)
+
+#### 256. [Remove Temp Files](#256)
+
+---
+
+<br>
+
+### 243. Intro<a id='243'></a>
+
+<br>
+
+### 244. Setup<a id='244'></a>
+
+<br>
+
+### 245. Product Model<a id='245'></a>
+
+<br>
+
+### 246. Basic Structure<a id='246'></a>
+
+<br>
+
+### 247. Postman Setup<a id='247'></a>
+
+<br>
+
+### 248. Create Product (Fail)<a id='248'></a>
+
+<br>
+
+### 249. Upload Image - Postman<a id='249'></a>
+
+<br>
+
+### 250. EXPRESS-FILEUPLOAD Package<a id='250'></a>
+
+<br>
+
+### 251. Complete File Upload<a id='251'></a>
+
+<br>
+
+### 252. Additional Checks<a id='252'></a>
+
+<br>
+
+### 253. Cloudinary Intro<a id='253'></a>
+
+<br>
+
+### 254. Cloudinary Setup<a id='254'></a>
+
+<br>
+
+### 255. Upload Image to Cloudinary<a id='255'></a>
+
+<br>
+
+### 256. Remove Temp Files<a id='256'></a>
+
+<br>
+
+---

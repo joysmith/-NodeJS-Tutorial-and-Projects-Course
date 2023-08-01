@@ -1,28 +1,51 @@
-# Node and Express Tutorial
+#### 257. [Intro](#257)
 
-#### Node Course
+#### 258. [Setup](#258)
 
-[Node Tutorial and Projects Course](https://www.udemy.com/course/nodejs-tutorial-and-projects-course/?referralCode=E94792BEAE9ADD204BC7)
+#### 259. [Nodemailer Info](#259)
 
-#### Support
+#### 260. [Ethereal Info and Account](#260)
 
-Find the App Useful? [You can always buy me a coffee](https://www.buymeacoffee.com/johnsmilga)
+#### 261. [Send Emails With Ethereal](#261)
 
-#### Contents
+#### 262. [SendGrid Info](#262)
 
-1. Node Tutorial
-2. Express Tutorial
-3. Task Manager (MongoDB, Mongoose)
-4. Store API
-5. JWT Basics
-6. Jobs API
+#### 263. [Sender Identity](#263)
 
-#### Course Exclusive
+#### 264. [Send Emails with SendGrid](#264)
 
-[Node Tutorial and Projects Course](https://www.udemy.com/course/nodejs-tutorial-and-projects-course/?referralCode=E94792BEAE9ADD204BC7)
+---
 
-7. File Upload (local and cloudinary)
-8. Send Email (nodemailer,ethereal and sendgrid )
-9. Stripe Payment
-10. E-Commerce API
-11. Auth Workflow (verify email, reset password)
+<br>
+
+### 257. Intro<a id='257'></a>
+
+<br>
+
+### 258. Setup<a id='258'></a>
+
+<br>
+
+### 259. Nodemailer Info<a id='259'></a>
+
+<br>
+
+### 260. Ethereal Info and Account<a id='260'></a>
+
+<br>
+
+### 261. Send Emails With Ethereal<a id='261'></a>
+
+<br>
+
+### 262. SendGrid Info<a id='262'></a>
+
+<br>
+
+### 263. Sender Identity<a id='263'></a>
+
+<br>
+
+### 264. Send Emails with SendGrid<a id='264'></a>
+
+<br>
