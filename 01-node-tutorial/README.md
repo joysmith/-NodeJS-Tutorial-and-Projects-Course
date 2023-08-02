@@ -119,7 +119,7 @@
 
 ### First Module<a id="14"></a>
 
-- create 04-names.js-file, in it write code
+- create 04-names.js-file, in it write variable and share it
 
 ```js
 // local
@@ -134,7 +134,7 @@ module.exports = { john, peter };
 
 ---
 
-- create 05-utils.js-file, in it write code
+- create 05-utils.js-file, in it write function and share it
 
 ```js
 const sayHi = (name) => {
@@ -147,7 +147,7 @@ module.exports = sayHi;
 
 ---
 
-- create 03-modules.js-file, in it write code
+- create 03-modules.js-file, in it use shared function, name
 
 ```js
 // CommonJS, every file is module (by default)
