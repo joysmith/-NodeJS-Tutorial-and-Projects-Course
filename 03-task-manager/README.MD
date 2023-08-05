@@ -95,7 +95,7 @@
 npm install
 ```
 
-- to start the dev server run cmd
+- To start the dev server run cmd
 
 ```sh
 npm start
@@ -106,11 +106,13 @@ npm start
 - In app.js, setup basic express server
 
 ```js
+// import express package
 const express = require("express");
 const app = express();
 
 // routes
 app.get("/hello", (req, res) => {
+  // send simple html response
   res.send("Task Manager App");
 });
 
@@ -129,11 +131,19 @@ http://localhost:3000/hello
 
 ### 91. General Routes<a id='91'></a>
 
+- get all task route
+- post a single task route
+- get route with params, for single task
+- patch route with params, for single task
+- delete route with params, for single task
+
 <img src="notes/routes.png" width="400">
 
 <br>
 
 ### 92. Route Structure and Details<a id='92'></a>
+
+- In [ Algolia Search's API.](https://hn.algolia.com/api) Likeness we will create our api
 
 <br>
 
@@ -142,10 +152,11 @@ http://localhost:3000/hello
 - create routes & controller-folders in root level
 - In routes-folder create tasks.js-file
 - In controller-folder create tasks.js-file
-- In routes/tasks.js, write route using middleware
+- In routes/tasks.js, write route
 
 ```js
 const express = require("express");
+// invoking router
 const router = express.Router();
 
 router.route("/").get((req, res) => {
@@ -163,17 +174,17 @@ module.exports = router;
 const express = require("express");
 const app = express();
 
-// import route
+// import get route from router
 const tasks = require("./routes/tasks");
 
-//
+// to access json post data from req.body
 app.use(express.json());
 
 app.get("/hello", (req, res) => {
   res.send("Task Manager App");
 });
 
-// setup tasks route middlware
+// pass tasks route in middlware
 app.use("/api/v1/tasks", tasks);
 
 const port = 3000;
@@ -191,7 +202,7 @@ http://localhost:3000/api/v1/tasks
 
 ---
 
-- In controllers/tasks.js, move logic from routes/task.js to here and export
+- In controllers/tasks.js, move callback logic from routes/task.js to here and export
 
 ```js
 const getAllTasks = (req, res) => {
@@ -203,16 +214,16 @@ module.exports = { getAllTasks };
 
 ---
 
-- In routes/taks.js import logic
+- In routes/taks.js import callback controller logic
 
 ```js
 const express = require("express");
 const router = express.Router();
 
-// import logic from controller
+// import controller logic
 const { getAllTasks } = require("../controllers/tasks");
 
-// pass logic
+// pass callback controller logic
 router.route("/").get(getAllTasks);
 
 module.exports = router;
@@ -230,25 +241,29 @@ http://localhost:3000/api/v1/tasks
 
 ### 94. All Routes<a id='94'></a>
 
-- In controller/tasks.js, write logic for all routes
+- In controller/tasks.js, write callback CRUD logic for all routes
 
 ```js
 const getAllTasks = (req, res) => {
   res.send("get all tasks");
 };
 
+// create
 const createTask = (req, res) => {
   res.send("create task");
 };
 
+// retrive
 const getTask = (req, res) => {
   res.send("get single task");
 };
 
+// update
 const updateTask = (req, res) => {
   res.send("update task");
 };
 
+// delete
 const deleteTask = (req, res) => {
   res.send("delete task");
 };
@@ -258,13 +273,13 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 
 ---
 
-- In routes/taks.js, import all logic from controller and setup routes
+- In routes/tasks.js, import all callback-logic from controller and pass routes
 
 ```js
 const express = require("express");
 const router = express.Router();
 
-// import all logic from controller
+// import all callback-logic from controller
 const {
   getAllTasks,
   createTask,
@@ -280,11 +295,13 @@ router.route("/:id").get(getTask).patch(updateTask).delete(deleteTask);
 module.exports = router;
 ```
 
+- In CRUD C = create, we do "post" request to create something
+
 <br>
 
 ### 95. Postman Setup<a id='95'></a>
 
-- open postman and click on collections, create collection, rename to "03-Task-Manager"
+- open postman, create collection, rename to "03-Task-Manager"
 - click on eye icon, and setup as gloabl variable
 
 ```sh
@@ -314,14 +331,14 @@ URL         localhost:3000/api/v1    localhost:3000/api/v1
     }
 ```
 
-- checking out middleware is working, In contoller/tasks.js
+- check-out callback are working, In contoller/tasks.js
 
 ```js
 const getAllTasks = (req, res) => {
   res.send("get all tasks");
 };
 
-// edit fron send to json
+// replace send with json response
 const createTask = (req, res) => {
   res.json(req.body);
 };
@@ -362,7 +379,7 @@ const createTask = (req, res) => {
   res.json(req.body);
 };
 
-// edit fron send to json
+// replace send with json response
 const getTask = (req, res) => {
   res.json({ id: req.params.id });
 };
@@ -408,13 +425,17 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ### 96. REST<a id='96'></a>
 
 - CRUD: create read update destroy
-- REST api is a design pattern
+- REST api is a design pattern, that combine http verbs, route path, and resources aka data
 
 <img src="notes/restapi.png" width="400">
 
 <br>
 
 ### 97. MongoDB Intro<a id='97'></a>
+
+- store json
+- instead of tables we have collection which represent group of items
+- instead of row we have documents which represent single item
 
 <br>
 
@@ -428,28 +449,34 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 - create cluster for free
   - aws, select region,
   - cluster name: NodeexpressProject
--
-- <br>
+
+ <br>
 
 ### 99. DB, Network Access and Connection String<a id='99'></a>
 
-- Password authenticaton
+- Go to, database access tab under security -> add new database user -> password authentication
   - name: john
   - password: 1234
-- Database user privileges
+- Database user privileges(built in role)
   - read and write to any database
 - ADD user
-- Network access
+- Go to Network access tab
   - allow access from anywhere
-- connect your application
+- Go to Database tab-> connect your application-> mongodb for vs-code
   - copy the string
 - Create new db-folder in rootlevel, and create connect.js, and write
 
 ```js
-
+const connectionString = "paste here connection string from mongo db";
 ```
 
-- <br>
+<br>
+
+- setting database name in connectionString
+
+<img src="notes/db.png" width="800">
+
+<br>
 
 ### 100. Additional Info<a id='100'></a>
 
@@ -460,19 +487,24 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ### 101. MongoDB Overview<a id='101'></a>
 
 - Termilogy
-  - Database: file name
-  - Collection: json file
-  - Document: single item or obj
+  - Database(store): file name
+  - Collection(Products): json file
+  - Document(items): single item or obj
 
 <br>
 
 ### 102. CRUD - GUI Example<a id='102'></a>
 
+- create item/product
+- read item/product
+- update item/product
+- delete item/product
+
 <br>
 
 ### 103. Mongoose Info<a id='103'></a>
 
-- [Mongoose](https://www.npmjs.com/package/mongoose)
+- object data modilling library [Mongoose](https://www.npmjs.com/package/mongoose)
 - install mangoose
 
 ```
@@ -483,11 +515,12 @@ npm install mongoose@5.11.10
 
 ### 104. Connect To DB<a id='104'></a>
 
-- In db/connect.js, import moongoose & connect to db
+- In db/connect.js, import moongoose package & connect to db
 - Note- in mongoose version7 dont need to pass obj setting in connect
   - The version i'm using is "mongoose": "^5.11.10"
 
 ```js
+// import mongoose package
 const mongoose = require("mongoose");
 
 const connectionString =
@@ -516,7 +549,7 @@ mongoose
 
 ---
 
-- In app for testing write
+- In app.js, import moongoose
 
 ```js
 // temporary connect for testing
@@ -545,7 +578,7 @@ app.listen(port, console.log(`Server is listening on port ${port}...`));
 
 ### 105. Refactor Connect<a id='105'></a>
 
-- In db/connect.js, refactor
+- In db/connect.js, refactor code into callback function
 
 ```js
 const mongoose = require("mongoose");
@@ -567,13 +600,14 @@ module.exports = connectDB;
 
 ---
 
-- In app.js
+- In app.js, import mongoose connect, and invoke inside start
 
 ```js
 const express = require("express");
 const app = express();
 const tasks = require("./routes/tasks");
 
+// import mongoose connect db
 const connectDB = require("./db/connect");
 
 app.use(express.json());
@@ -621,7 +655,7 @@ npm install dotenv --save
 
 - create .env-file in root level, in it pluck connection string from connect.js
 
-```js
+```.env
 MONGO_URI= mongodb+srv://joy:1234@nodeexpressproject.ea0my0k.mongodb.net/?retryWrites=true&w=majority
 ```
 
@@ -633,6 +667,7 @@ MONGO_URI= mongodb+srv://joy:1234@nodeexpressproject.ea0my0k.mongodb.net/?retryW
 const mongoose = require("mongoose");
 
 const connectDB = (url) => {
+  // replace connectionString with url
   return mongoose.connect(url, {
     useNewUrlParser: true,
     useCreateIndex: true,
@@ -646,7 +681,7 @@ module.exports = connectDB;
 
 ---
 
-- In app.js
+- In app.js, import dotenv package and pass MONGO_URI in connectDB
 
 ```js
 const express = require("express");
@@ -684,11 +719,12 @@ start();
 
 ### 107. First Schema and Model<a id='107'></a>
 
-- Create models-folder in root level, in it create Task.js-file, and write schema
+- Create models-folder in root level, in it create Task.js-file, and write schema using mongoose constructor
 
 ```js
 const mongoose = require("mongoose");
 
+// mongoose constructor for creating schema
 const TaskSchema = new mongoose.Schema({
   name: String,
   completed: Boolean,
@@ -697,21 +733,25 @@ const TaskSchema = new mongoose.Schema({
 module.exports = mongoose.model("Task", TaskSchema);
 ```
 
+- [SchemaTypes](https://mongoosejs.com/docs/schematypes.html)
+
 <br>
 
 ### 108. Create Task<a id='108'></a>
 
+- In controllers/tasks.js, import model, and create task/item on atlasdb server
+
 ```js
-// import model
+// import task model
 const Task = require("../models/Task");
 
 const getAllTasks = (req, res) => {
   res.send("get all tasks");
 };
 
-// making async function
+// making async callback function
 const createTask = async (req, res) => {
-  // creating task using model
+  // create task/item on atlas-mongo-db server
   const task = await Task.create(req.body);
   res.status(201).json({ task });
 };
@@ -731,7 +771,7 @@ const deleteTask = (req, res) => {
 module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ```
 
-- go to post man and make a create task post request
+- go to post man and make a "Create Task" post request
 
 <br>
 
@@ -741,7 +781,7 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 
 ### 110. Basic Validation<a id='110'></a>
 
-- In models/Task.js, adding builtin validator
+- In models/Task.js, adding built-in mongoose validator
 
 ```js
 const mongoose = require("mongoose");
@@ -765,8 +805,8 @@ const TaskSchema = new mongoose.Schema({
 module.exports = mongoose.model("Task", TaskSchema);
 ```
 
-- go to postman, make post request by creat Task
-- [Validation](https://mongoosejs.com/docs/validation.html)
+- OPen postman, make "create Task" post request
+- Mongoose built-in [Validation](https://mongoosejs.com/docs/validation.html)
 
 <br>
 
@@ -787,6 +827,7 @@ const createTask = async (req, res) => {
     const task = await Task.create(req.body);
     res.status(201).json({ task });
   } catch (error) {
+    // response general error, instead of making user hanging
     res.status(500).json({ msg: error });
   }
 };
@@ -806,22 +847,25 @@ const deleteTask = (req, res) => {
 module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ```
 
-- make post req using create task by postman
+- open postman, make "create task" post request
 
 <br>
 
 ### 112. getAllTasks Controller<a id='112'></a>
 
-- In controllers/tasks.js
+- In controllers/tasks.js, turn getAllTasks callback into async callback
 
 ```js
 const Task = require("../models/Task");
 
+// turn into async callback function
 const getAllTasks = async (req, res) => {
   try {
-    // get all task
+    // get all task/item from atlas-mongo-db server
     const tasks = await Task.find({});
-    res.status(200).json({ tasks });
+
+    // res.status(200).json({ tasks: tasks });
+    res.status(200).json({ tasks }); // ES6 shorthand feature
   } catch (error) {
     res.status(500).json({ msg: error });
   }
@@ -829,7 +873,6 @@ const getAllTasks = async (req, res) => {
 
 const createTask = async (req, res) => {
   try {
-    // create task
     const task = await Task.create(req.body);
     res.status(201).json({ task });
   } catch (error) {
@@ -837,7 +880,6 @@ const createTask = async (req, res) => {
   }
 };
 
-// edit fron send to json
 const getTask = (req, res) => {
   res.json({ id: req.params.id });
 };
@@ -853,21 +895,20 @@ const deleteTask = (req, res) => {
 module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ```
 
-- go to postman, make a get all task request
-- [Model.find()](<https://mongoosejs.com/docs/api/model.html#Model.find()>)
+- Open postman, make a "get all task" request
+- [Model.find()](<https://mongoosejs.com/docs/api/model.html#Model.find()>) query
 
 <br>
 
 ### 113. getSingleTask<a id='113'></a>
 
-- In controller/taks.js
+- In controller/taks.js, turn getTask() into async callback,
 
 ```js
 const Task = require("../models/Task");
 
 const getAllTasks = async (req, res) => {
   try {
-    // get all task
     const tasks = await Task.find({});
     res.status(200).json({ tasks });
   } catch (error) {
@@ -877,7 +918,6 @@ const getAllTasks = async (req, res) => {
 
 const createTask = async (req, res) => {
   try {
-    // create task
     const task = await Task.create(req.body);
     res.status(201).json({ task });
   } catch (error) {
@@ -885,12 +925,16 @@ const createTask = async (req, res) => {
   }
 };
 
+// turn into async callback function
 const getTask = async (req, res) => {
   try {
-    // destructing and giving alias at the same time
+    // destructing params and giving alias "taskID" at the same time
     const { id: taskID } = req.params;
-    // get single task
+
+    // get single task/item from atlas-mongo-db server
     const task = await Task.findOne({ _id: taskID });
+
+    // check: if task is null, means task/item doesn't exist in collections, then
     if (!task) {
       return res.status(404).json({ msg: `No task with id: ${taskID}` });
     }
@@ -912,9 +956,9 @@ const deleteTask = (req, res) => {
 module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ```
 
-- go to postman make get all task request, copy id of any one task
-- make a single task request by pasting id
-- [Model.findOne()](<https://mongoosejs.com/docs/api/model.html#Model.findOne()>)
+- Open postman make "get all task" request, copy id of any one task
+- make a "single task" request by pasting id on url route
+- [Model.findOne()](<https://mongoosejs.com/docs/api/model.html#Model.findOne()>) query
 
 <br>
 
