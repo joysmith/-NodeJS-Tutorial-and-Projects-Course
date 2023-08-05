@@ -441,9 +441,99 @@ Authorization        Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwidXN
 
 ### 162. Verify Token<a id='162'></a>
 
-<br>
+- In controller/main.js
+
+```js
+// check username, password in post(login) request
+// if exist create new JWT
+// send back to fron-end
+// setup authentication so only the request with JWT can access the dasboard
+
+const jwt = require("jsonwebtoken");
+
+const CustomAPIError = require("../errors/custom-error");
+
+const login = async (req, res) => {
+  const { username, password } = req.body;
+  /* 3 way to validate username, password 
+  1. mongoose validation
+  2. Joi package
+  3. check in the controller
+  */
+
+  // if username or password not provided throw error
+  if (!username || !password) {
+    throw new CustomAPIError("Please provide email and password", 400);
+  }
+
+  //just for demo, normally provided by DB!!!!
+  const id = new Date().getDate();
+
+  // try to keep payload small, better experience for user
+  // just for demo, in production use long, complex and unguessable string value!!!!!!!!!
+  const token = jwt.sign({ id, username }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
+
+  res.status(200).json({ msg: "user created", token });
+};
+
+const dashboard = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  // console.log(authHeader);
+
+  // check if authHeader is not empty AND does not start with "Bearer "
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new CustomAPIError("No token provided", 401);
+  }
+
+  const token = authHeader.split(" ")[1];
+  console.log(token);
+
+  try {
+    const decode = jwt.verify(token, process.env.JWT_SECRET);
+
+    // generate random number
+    const luckyNumber = Math.floor(Math.random() * 100);
+    res.status(200).json({
+      msg: `Hello, ${decode.username}`,
+      secret: `Here is your authorized data, your lucky number is ${luckyNumber}`,
+    });
+  } catch (error) {
+    throw new CustomAPIError("Not authorized to access this route", 401);
+  }
+};
+
+module.exports = {
+  login,
+  dashboard,
+};
+```
+
+- open postman make post request and copy token
+- make get request by enterning token in "Header"-tab
+  <br>
 
 ### 163. Auth Middleware Setup<a id='163'></a>
+
+- In middleware/auth.js,
+
+```js
+const authenticationMiddleware = async (req, res, next) => {
+  console.log(req.headers.authorization);
+  next();
+};
+
+module.exports = authenticationMiddleware;
+```
+
+---
+
+- In routes/main.js
+
+```js
+
+```
 
 <br>
 
