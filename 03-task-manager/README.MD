@@ -968,14 +968,13 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 
 ### 115. Delete Task<a id='115'></a>
 
-- In controllers/task.js
+- In controllers/task.js, turn deleteTask() into async callback
 
 ```js
 const Task = require("../models/Task");
 
 const getAllTasks = async (req, res) => {
   try {
-    // get all task
     const tasks = await Task.find({});
     res.status(200).json({ tasks });
   } catch (error) {
@@ -985,7 +984,6 @@ const getAllTasks = async (req, res) => {
 
 const createTask = async (req, res) => {
   try {
-    // create task
     const task = await Task.create(req.body);
     res.status(201).json({ task });
   } catch (error) {
@@ -993,7 +991,6 @@ const createTask = async (req, res) => {
   }
 };
 
-// edit fron send to json
 const getTask = async (req, res) => {
   try {
     const { id: taskID } = req.params;
@@ -1012,11 +1009,14 @@ const updateTask = (req, res) => {
   res.send("update task");
 };
 
-/* delete task */
+/* delete task turn into async callback function*/
 const deleteTask = async (req, res) => {
   try {
+    // destructing params and giving alias "taskID" at the same time
     const { id: taskID } = req.params;
+    // get single task/item from atlas-mongo-db server
     const task = await Task.findOneAndDelete({ _id: taskID });
+    // check: if task is null, means task/item doesn't exist in collections, then
     if (!task) {
       return res.status(404).json({ msg: `No task with id: ${taskID}` });
     }
@@ -1029,22 +1029,21 @@ const deleteTask = async (req, res) => {
 module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ```
 
-- go to postman make get all tasks request, copy id of anyone item
-- make a delete task request by pasting it as param
-- [Model.findOneAndDelete()](<https://mongoosejs.com/docs/api/model.html#Model.findOneAndDelete()>)
+- open postman make "get all tasks" request, copy id of anyone item
+- make a "delete task" request by pasting ID as param
+- [Model.findOneAndDelete()](<https://mongoosejs.com/docs/api/model.html#Model.findOneAndDelete()>) query
 
 <br>
 
 ### 116. Update Task<a id='116'></a>
 
-- In controller/task.js
+- In controller/task.js, turn updateTask() into async callback
 
 ```js
 const Task = require("../models/Task");
 
 const getAllTasks = async (req, res) => {
   try {
-    // get all task
     const tasks = await Task.find({});
     res.status(200).json({ tasks });
   } catch (error) {
@@ -1054,7 +1053,6 @@ const getAllTasks = async (req, res) => {
 
 const createTask = async (req, res) => {
   try {
-    // create task
     const task = await Task.create(req.body);
     res.status(201).json({ task });
   } catch (error) {
@@ -1062,7 +1060,6 @@ const createTask = async (req, res) => {
   }
 };
 
-// edit fron send to json
 const getTask = async (req, res) => {
   try {
     const { id: taskID } = req.params;
@@ -1090,16 +1087,19 @@ const deleteTask = async (req, res) => {
   }
 };
 
-/* update task */
+/* update task turn into async callback function*/
 const updateTask = async (req, res) => {
   try {
+    // destructing params and giving alias "taskID" at the same time
     const { id: taskID } = req.params;
 
+    // get single task/item from atlas-mongo-db server and update with new item
     const task = await Task.findOneAndUpdate({ _id: taskID }, req.body, {
       new: true,
       runValidators: true,
     });
 
+    // check: if task is null, means task/item doesn't exist in collections, then
     if (!task) {
       return res.status(404).json({ msg: `No task with id: ${taskID}` });
     }
@@ -1115,7 +1115,6 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 
 - go to postman, make get all task request, copy any id
 - select tab body-> raw-> json, write obj
-- make update request, by pasting as param
 
 ```sh
  {
@@ -1123,6 +1122,8 @@ module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
       "completed": true
   }
 ```
+
+- make "update request", by pasting as param
 
 - [Model.findByIdAndUpdate()](<https://mongoosejs.com/docs/api/model.html#Model.findByIdAndUpdate()>)
 
