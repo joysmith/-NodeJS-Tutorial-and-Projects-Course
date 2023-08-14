@@ -1144,12 +1144,6 @@ require("dotenv").config();
 app.use(express.static("./public"));
 app.use(express.json());
 
-// -----remove testing code---
-// app.get("/hello", (req, res) => {
-//   res.send("Task Manager App");
-// });
-
-// setup tasks route middlware
 app.use("/api/v1/tasks", tasks);
 
 const port = 3000;
@@ -1174,6 +1168,10 @@ start();
 
 ### 119. Response Types<a id='119'></a>
 
+- In controllers/task.js, different option for response to frontend\
+
+<img src="notes/response.png" width="400">
+
 <br>
 
 ### 120. NOT FOUND<a id='120'></a>
@@ -1188,7 +1186,7 @@ module.exports = notFound;
 
 ---
 
-- In app.js, import it and use in middleware
+- In app.js, import not-found and use in middleware
 
 ```js
 const express = require("express");
@@ -1200,11 +1198,9 @@ require("dotenv").config();
 // import not found
 const notFound = require("./middleware/not-found");
 
-// middleware serving static files
 app.use(express.static("./public"));
 app.use(express.json());
 
-// setup tasks route middlware
 app.use("/api/v1/tasks", tasks);
 
 // 404 page not found add in middleware
@@ -1224,13 +1220,13 @@ const start = async () => {
 start();
 ```
 
-- test in postman if everything is working or not
+- test in postman everything is working or not
 
 <br>
 
 ### 121. Async Wrapper<a id='121'></a>
 
-- In middleware-folder create async.js, write wrapper function
+- In middleware-folder create async.js, write wrapper function to wrap our controllers
 
 ```js
 const asyncWrapper = (fn) => {
@@ -1247,6 +1243,8 @@ module.exports = asyncWrapper;
 ```
 
 ---
+
+- In controllers/task.js refactor by wrapping asyncWrapper and removing try and catch block
 
 ```js
 const Task = require("../models/Task");
@@ -1302,7 +1300,7 @@ const updateTask = asyncWrapper(async (req, res) => {
 module.exports = { getAllTasks, createTask, getTask, updateTask, deleteTask };
 ```
 
-- test in postman if everything is working or not
+- test in postman everything is working or not
 
 <br>
 
@@ -1332,17 +1330,13 @@ require("dotenv").config();
 // import errorhandler
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
-// import not found
 const notFound = require("./middleware/not-found");
 
-// middleware serving static files
 app.use(express.static("./public"));
 app.use(express.json());
 
-// setup tasks route middlware
 app.use("/api/v1/tasks", tasks);
 
-// 404 page not found add in middleware
 app.use(notFound);
 
 // error handler
@@ -1370,6 +1364,8 @@ start();
   }
 ```
 
+- [Writing error handlers](https://expressjs.com/en/guide/error-handling.html#writing-error-handlers)
+
 <br>
 
 ### 123. Custom Error Class<a id='123'></a>
@@ -1378,7 +1374,7 @@ start();
 
 ### 124. PORT Variable<a id='124'></a>
 
-- In app.js,
+- In app.js, setup port variable using environmental variable
 
 ```js
 const express = require("express");
@@ -1388,19 +1384,15 @@ const connectDB = require("./db/connect");
 require("dotenv").config();
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
-// import not found
 const notFound = require("./middleware/not-found");
 
-// middleware serving static files
 app.use(express.static("./public"));
 app.use(express.json());
 
-// setup tasks route middlware
 app.use("/api/v1/tasks", tasks);
 
-// 404 page not found add in middleware
 app.use(notFound);
-// error handler
+
 app.use(errorHandlerMiddleware);
 
 // set port by environment variable and if nothing there set by 3000
