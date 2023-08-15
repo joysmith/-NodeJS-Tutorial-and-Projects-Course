@@ -205,10 +205,12 @@ start();
 - In controllers/products.js, create controller logic
 
 ```js
+// manually testing responding
 const getAllProductsStatic = async (req, res) => {
   res.status(200).json({ msg: "product testing route" });
 };
 
+// conditional responding
 const getAllProducts = async (req, res) => {
   res.status(200).json({ msg: "product route" });
 };
@@ -726,7 +728,7 @@ await Person.find({
   likes: { $in: ["vaporizing", "talking"] },
 })
   .limit(10)
-  .sort({ occupation: -1 })
+  .sort({ occupation: -1 }) // sort
   .select({ name: 1, occupation: 1 })
   .exec();
 ```
@@ -785,29 +787,579 @@ module.exports = {
 
 ### 142. Sort - getAllProducts Implementation<a id='142'></a>
 
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  const products = await Product.find({}).sort("-name price");
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured, company, name, sort } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  // Conditional sorting
+  let result = Product.find(queryObject);
+  // if sort quesry is pass by user
+  if (sort) {
+    // in case of multiple sort enteries
+    const sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
+
+  // old: const products = await Product.find(queryObject);
+  const products = await result;
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request
+
+```sh
+{{URL}}/products?sort=name,-price
+```
+
 <br>
 
 ### 143. Select Option<a id='143'></a>
+
+- [select With a JSON doc](https://mongoosejs.com/docs/queries.html)
+  - refernce document
+  - method chaning
+
+```js
+// With a JSON doc
+await Person.find({
+  occupation: /host/,
+  "name.last": "Ghost",
+  age: { $gt: 17, $lt: 66 },
+  likes: { $in: ["vaporizing", "talking"] },
+})
+  .limit(10)
+  .sort({ occupation: -1 })
+  .select({ name: 1, occupation: 1 }) // select
+  .exec();
+```
+
+---
+
+- In controllers/products.js, create conditional select() logic
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  // SELECT: if we want specific properties
+  const products = await Product.find({}).select("name price");
+
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured, company, name, sort, fields } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  let result = Product.find(queryObject);
+  if (sort) {
+    const sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
+
+  // if fields: user want specific properties
+  if (fields) {
+    // remove , from string and replace with " "
+    const fieldsList = fields.split(",").join(" ");
+    result = result.select(fieldsList);
+  }
+
+  const products = await result;
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products -Testing" request
+
+```sh
+{{URL}}/products/static?fields=company,rating
+```
+
+---
+
+- In postman make "Get all products" request
+
+```sh
+{{URL}}/products?fields=company,rating
+```
 
 <br>
 
 ### 144. Skip and Limit - General Info<a id='144'></a>
 
+- [skip & limit With a JSON doc](https://mongoosejs.com/docs/queries.html)
+  - refernce document
+  - method chaning
+
+```js
+// With a JSON doc
+await Person.find({
+  occupation: /host/,
+  "name.last": "Ghost",
+  age: { $gt: 17, $lt: 66 },
+  likes: { $in: ["vaporizing", "talking"] },
+})
+  .limit(10) // limit
+  .sort({ occupation: -1 })
+  .select({ name: 1, occupation: 1 })
+  .exec();
+```
+
+---
+
+- In controllers/products.js, add limit & skip logic manually
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  // LIMIT & SKIP
+  const products = await Product.find({})
+    .sort("name")
+    .select("name company")
+    .limit(10) // only show 10 items
+    .skip(5); // skip first 5 items
+
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured, company, name, sort, fields } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  let result = Product.find(queryObject);
+  if (sort) {
+    const sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
+
+  if (fields) {
+    const fieldsList = fields.split(",").join(" ");
+    result = result.select(fieldsList);
+  }
+
+  const products = await result;
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products -Testing" request
+
+```sh
+{{URL}}/products/static
+```
+
 <br>
 
 ### 145. Pagination<a id='145'></a>
+
+- In controllers/products.js, add limit & skip logic, to perform pagination query
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  // LIMIT & SKIP
+  const products = await Product.find({})
+    .sort("name")
+    .select("name company")
+    .limit(10)
+    .skip(5);
+
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  const { featured, company, name, sort, fields } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  let result = Product.find(queryObject);
+  if (sort) {
+    const sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
+
+  if (fields) {
+    const fieldsList = fields.split(",").join(" ");
+    result = result.select(fieldsList);
+  }
+
+  // pagination
+  const page = Number(req.query.page) || 1; // turn string into number, or default set to 1-page
+  const limit = Number(req.query.limit) || 10; // turn string into number, or default set to 10-items
+  const skip = (page - 1) * limit; // math logic
+  result = result.skip(skip).limit(limit); // usage of skip and limit for pagination
+  // 23
+  // 4 7 7 7 2
+
+  const products = await result;
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request
+
+```sh
+{{URL}}/products?sort=name&fields=name,price&limit=2&page=2
+```
 
 <br>
 
 ### 146. Numeric Filters - Setup<a id='146'></a>
 
+- [Numeric filters With a JSON doc](https://mongoosejs.com/docs/queries.html)
+  - refernce document
+  - method chaning
+
+```js
+// With a JSON doc
+await Person.find({
+  occupation: /host/,
+  "name.last": "Ghost",
+  age: { $gt: 17, $lt: 66 }, // numeric filter
+  likes: { $in: ["vaporizing", "talking"] },
+})
+  .limit(10)
+  .sort({ occupation: -1 })
+  .select({ name: 1, occupation: 1 })
+  .exec();
+```
+
+---
+
+- In controllers/products.js, create numeric filter, to get price greater than 30
+  - manually testing
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  // FILTER NUMERIC: price based on <, >
+  const products = await Product.find({ price: { $gt: 30 } })
+    .sort("price")
+    .select("name price");
+
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  const { featured, company, name, sort, fields } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  let result = Product.find(queryObject);
+  if (sort) {
+    const sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
+
+  if (fields) {
+    const fieldsList = fields.split(",").join(" ");
+    result = result.select(fieldsList);
+  }
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  result = result.skip(skip).limit(limit);
+
+  const products = await result;
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request
+
+```sh
+{{URL}}/products/static
+```
+
 <br>
 
 ### 147. Numeric Filters - Regex<a id='147'></a>
 
+- In controllers/products.js, create numeric filter, to get price greater than 30
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  const products = await Product.find({ price: { $gt: 30 } })
+    .sort("price")
+    .select("name price");
+
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured, company, name, sort, fields, numericFilters } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  // numeric filter for price
+  if (numericFilters) {
+    const operatorMap = {
+      ">": "$gt",
+      ">=": "$gte",
+      "=": "$eq",
+      "<": "$lt",
+      "<=": "$lte",
+    };
+    const regEx = /\b(<|>|>=|=|<|<=)\b/g;
+    let filters = numericFilters.replace(
+      regEx,
+      (match) => `-${operatorMap[match]}-`
+    );
+  }
+
+  let result = Product.find(queryObject);
+  if (sort) {
+    const sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
+
+  if (fields) {
+    const fieldsList = fields.split(",").join(" ");
+    result = result.select(fieldsList);
+  }
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  result = result.skip(skip).limit(limit);
+
+  const products = await result;
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
 <br>
 
 ### 148. Numeric Filters - Complete<a id='148'></a>
+
+- In controllers/products.js, create numeric filter, to get price greater than 30
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  const products = await Product.find({ price: { $gt: 30 } })
+    .sort("price")
+    .select("name price");
+
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured, company, name, sort, fields, numericFilters } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  // numeric filter for price
+  if (numericFilters) {
+    const operatorMap = {
+      ">": "$gt",
+      ">=": "$gte",
+      "=": "$eq",
+      "<": "$lt",
+      "<=": "$lte",
+    };
+    const regEx = /\b(<|>|>=|=|<|<=)\b/g;
+    let filters = numericFilters.replace(
+      regEx,
+      (match) => `-${operatorMap[match]}-`
+    );
+    const options = ["price", "rating"];
+    filters = filters.split(",").forEach((item) => {
+      const [field, operator, value] = item.split("-");
+      if (options.includes(field)) {
+        queryObject[field] = { [operator]: Number(value) };
+      }
+    });
+  }
+
+  let result = Product.find(queryObject);
+  if (sort) {
+    const sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
+
+  if (fields) {
+    const fieldsList = fields.split(",").join(" ");
+    result = result.select(fieldsList);
+  }
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  result = result.skip(skip).limit(limit);
+
+  const products = await result;
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request
+
+```sh
+{{URL}}/products?numericFilters=price>40,rating>=4
+```
 
 <br>
 
