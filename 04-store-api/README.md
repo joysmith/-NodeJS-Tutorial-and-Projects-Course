@@ -713,6 +713,74 @@ module.exports = {
 
 ### 141. Sort - General Setup<a id='141'></a>
 
+- [sorting With a JSON doc](https://mongoosejs.com/docs/queries.html)
+  - refernce document
+  - method chaning
+
+```js
+// With a JSON doc
+await Person.find({
+  occupation: /host/,
+  "name.last": "Ghost",
+  age: { $gt: 17, $lt: 66 },
+  likes: { $in: ["vaporizing", "talking"] },
+})
+  .limit(10)
+  .sort({ occupation: -1 })
+  .select({ name: 1, occupation: 1 })
+  .exec();
+```
+
+---
+
+- In controllers/products.js, add sorting
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  // SORTING
+  // const products = await Product.find({}).sort("name");
+  // const products = await Product.find({}).sort("-name");
+  const products = await Product.find({}).sort("-name price");
+
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  const { featured, company, name } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  if (name) {
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  const products = await Product.find(queryObject);
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products -testing" request
+
+```sh
+{{URL}}/products/static
+```
+
 <br>
 
 ### 142. Sort - getAllProducts Implementation<a id='142'></a>
