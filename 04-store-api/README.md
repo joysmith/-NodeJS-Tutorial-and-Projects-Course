@@ -1,32 +1,58 @@
 #### 126. [Intro](#126)
+
 #### 127. [Setup](#127)
+
 #### 128. [Basic Express App](#128)
+
 #### 129. [Connect To DB](#129)
+
 #### 130. [Router](#130)
+
 #### 131. [Postman Setup](#131)
+
 #### 132. [EXPRESS-ASYNC-ERRORS](#132)
+
 #### 133. [Product Model](#133)
+
 #### 134. [Populate DB](#134)
+
 #### 135. [Basic Find](#135)
+
 #### 136. [Query Params](#136)
+
 #### 137. [Mongoose V6 Update](#137)
+
 #### 138. [Refactor to QueryObject](#138)
+
 #### 139. [Company](#139)
+
 #### 140. [Name](#140)
+
 #### 141. [Sort - General Setup](#141)
+
 #### 142. [Sort - getAllProducts Implementation](#142)
+
 #### 143. [Select Option](#143)
+
 #### 144. [Skip and Limit - General Info](#144)
+
 #### 145. [Pagination](#145)
+
 #### 146. [Numeric Filters - Setup](#146)
+
 #### 147. [Numeric Filters - Regex](#147)
+
 #### 148. [Numeric Filters - Complete](#148)
+
 #### 149. [Outro](#149)
-----
+
+---
+
 <br>
 
-
 ### 126. Intro<a id='126'></a>
+
+- In [ Algolia Search's API.](https://hn.algolia.com/api) Likeness we will create our api
 
 <br>
 
@@ -36,29 +62,431 @@
 
 ### 128. Basic Express App<a id='128'></a>
 
+- Download the starter project, open with vs-code
+- run npm cmd to install all dependency
+
+```sh
+npm install
+```
+
+- To start the dev server run cmd
+
+```sh
+npm start
+```
+
+---
+
+- In app.js, setup basic express server
+
+```js
+require("dotenv").config();
+// todo: async errors
+
+const express = require("express");
+const app = express();
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorMiddleware = require("./middleware/error-handler");
+
+// middleware
+app.use(express.json());
+
+// routes
+app.get("/", (req, res) => {
+  res.send('<h1>Store API</h1><a href="/api/v1/products">products route</a>');
+});
+
+// todo: products route
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
+
+const port = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    // todo: connectDB
+    app.listen(port, () => console.log(`Server is listening port ${port}...`));
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
+- go to local host
+
+```sh
+http://localhost:3000
+```
+
 <br>
 
 ### 129. Connect To DB<a id='129'></a>
+
+- go to mongodb.com, log into account
+- account setup
+  - orgainization: electronictetris
+  - project name: node and express course
+  - preffered language: javascript
+- create cluster for free
+  - aws, select region,
+  - cluster name: NodeexpressProject
+- Go to, database access tab under security -> add new database user -> password authentication
+  - name: john
+  - password: 1234
+- Database user privileges(built in role)
+  - read and write to any database
+- ADD user
+- Go to Network access tab
+  - allow access from anywhere
+- Go to Database tab-> connect your application-> mongodb for vs-code
+  - copy the string
+
+---
+
+- In rootlevel create .env file and init paste string
+
+```js
+MONGO_URI=mongodb+srv://joy:1234@store-api.wqgfx1c.mongodb.net/
+```
+
+---
+
+- In app.js import connectDb and use it in async
+
+```js
+require("dotenv").config();
+// Todo: async errors
+
+const express = require("express");
+const app = express();
+
+// import connectdb
+const connectDB = require("./db/connect");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorMiddleware = require("./middleware/error-handler");
+
+// middleware
+app.use(express.json());
+
+// routes
+app.get("/", (req, res) => {
+  res.send('<h1>Store API</h1><a href="/api/v1/products">products route</a>');
+});
+
+// Todo: products route
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
+
+const port = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    // connectDB
+    await connectDB(process.env.MONGO_URI);
+    app.listen(port, () => console.log(`Server is listening port ${port}...`));
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
 
 <br>
 
 ### 130. Router<a id='130'></a>
 
+- In controllers/products.js, create controller logic
+
+```js
+const getAllProductsStatic = async (req, res) => {
+  res.status(200).json({ msg: "product testing route" });
+};
+
+const getAllProducts = async (req, res) => {
+  res.status(200).json({ msg: "product route" });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In routes/products.js, write routes
+
+```js
+const express = require("express");
+const router = express.Router();
+
+const {
+  getAllProducts,
+  getAllProductsStatic,
+} = require("../controllers/products");
+
+router.route("/").get(getAllProducts);
+router.route("/static").get(getAllProductsStatic);
+
+module.exports = router;
+```
+
+---
+
+- In app.js import route and use route in middleware
+
+```js
+require("dotenv").config();
+// Todo: async errors
+
+const express = require("express");
+const app = express();
+
+const connectDB = require("./db/connect");
+
+// import products routes
+const productsRouter = require("./routes/products");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorMiddleware = require("./middleware/error-handler");
+
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send('<h1>Store API</h1><a href="/api/v1/products">products route</a>');
+});
+
+// products route
+app.use("/api/v1/products", productsRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
+
+const port = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URI);
+    app.listen(port, () => console.log(`Server is listening port ${port}...`));
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
 <br>
 
 ### 131. Postman Setup<a id='131'></a>
+
+- open postman, create collection, rename to "04-Store-API"
+- click on eye icon, and setup as gloabl variable
+
+```sh
+Variable    initial value            current value
+URL         localhost:3000/api/v1    localhost:3000/api/v1
+```
+
+- make a get request
+- type {{ and select URL
+- {{URL}}/products
+- click send
+- Save as "Get All Products" in 04-Store-API collection
+
+---
+
+- make a get request
+- type {{ and select URL
+- {{URL}}/products/static
+- click send
+- Save as "Get All Products -Testing" in 04-Store-API collection
+
+<br>
 
 <br>
 
 ### 132. EXPRESS-ASYNC-ERRORS<a id='132'></a>
 
+- In app.js, import async errors
+
+```js
+require("dotenv").config();
+
+//  async errors
+require("express-async-errors");
+
+const express = require("express");
+const app = express();
+
+const connectDB = require("./db/connect");
+const productsRouter = require("./routes/products");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorMiddleware = require("./middleware/error-handler");
+
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send('<h1>Store API</h1><a href="/api/v1/products">products route</a>');
+});
+
+app.use("/api/v1/products", productsRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
+
+const port = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URI);
+    app.listen(port, () => console.log(`Server is listening port ${port}...`));
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
+---
+
+- In controllers/products.js, create a testing error
+
+```js
+const getAllProductsStatic = async (req, res) => {
+  // throw async error
+  throw new Error("testing async errror");
+
+  res.status(200).json({ msg: "product testing route" });
+};
+
+const getAllProducts = async (req, res) => {
+  res.status(200).json({ msg: "product route" });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make a "get all product testing" request, to check custom error
+
 <br>
 
 ### 133. Product Model<a id='133'></a>
 
+- In models/products.js create product schema
+
+```js
+const mongoose = require("mongoose");
+
+const productSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    // custom error msg
+    required: [true, "product name must be provided"],
+  },
+
+  price: {
+    type: Number,
+    // custom error msg
+    required: [true, "product price must be provided"],
+  },
+
+  featured: {
+    type: Boolean,
+    default: false,
+  },
+
+  rating: {
+    type: Number,
+    default: 4.5,
+  },
+
+  createdAt: {
+    type: Date,
+    // auto set date
+    default: Date.now(),
+  },
+
+  company: {
+    type: String,
+    enum: {
+      // category of all company supported
+      values: ["ikea", "liddy", "caressa", "marcos"],
+      // custom error msg
+      message: "{VALUE} is not supported",
+    },
+    // enum: ['ikea', 'liddy', 'caressa', 'marcos'],
+  },
+});
+
+module.exports = mongoose.model("Product", productSchema);
+```
+
 <br>
 
 ### 134. Populate DB<a id='134'></a>
+
+- In populate.js, write logic to populate items automatically from pre-existing json-list
+
+```js
+require("dotenv").config();
+
+const connectDB = require("./db/connect");
+// import product schema
+const Product = require("./models/product");
+
+// import pre-existing items list
+const jsonProducts = require("./products.json");
+
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URI);
+    // remove all items from existing database
+    await Product.deleteMany();
+
+    // dynamically or automatically create item in db from jsonProducts
+    await Product.create(jsonProducts);
+
+    console.log("Success!!!!");
+
+    // terminate the process- 0 everything went well
+    process.exit(0);
+  } catch (error) {
+    console.log(error);
+
+    // terminate the process- 1 everything not went well
+    process.exit(1);
+  }
+};
+
+start();
+```
+
+---
+
+- In terminal run script
+
+```sh
+node populate
+```
+
+---
+
+NOTE- To populate database first terminate connection, and separately connect to database then populate it
 
 <br>
 
