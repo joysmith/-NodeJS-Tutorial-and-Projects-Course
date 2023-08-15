@@ -492,9 +492,73 @@ NOTE- To populate database first terminate connection, and separately connect to
 
 ### 135. Basic Find<a id='135'></a>
 
+- In controllers/products.js, write find query for db
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  // how to get all items
+  const products = await Product.find({});
+
+  // how to get specific item
+  // const products = await Product.find({ name: "vase table" });
+
+  // how to get all featured items
+  // const products = await Product.find({ featured: true });
+
+  // response findings with length of array
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  res.status(200).json({ msg: "product route" });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+- Open postman and make "get all product -testing" request
+- ref [find() query](<https://mongoosejs.com/docs/api/model.html#Model.find()>)
+
 <br>
 
 ### 136. Query Params<a id='136'></a>
+
+- In controllers/products.js,
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  const products = await Product.find({});
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // how to use query param? instead of hard coded key value passing in find()
+  const products = await Product.find(req.query);
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request using query-param
+
+```sh
+{{URL}}/products?featured=true
+```
+
+- ref [find() query](<https://mongoosejs.com/docs/api/model.html#Model.find()>)
 
 <br>
 
@@ -504,13 +568,146 @@ NOTE- To populate database first terminate connection, and separately connect to
 
 ### 138. Refactor to QueryObject<a id='138'></a>
 
+- In controllers/products.js
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  const products = await Product.find({});
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured } = req.query;
+  const queryObject = {};
+
+  // if featured is true then set new property to obj
+  if (featured) {
+    // add new featured property to queryobject, and set true/false
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  console.log(queryObject);
+  const products = await Product.find(queryObject);
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request using query-param
+
+```sh
+{{URL}}/products?featured=false&page=2
+```
+
 <br>
 
 ### 139. Company<a id='139'></a>
 
+- In controllers/products.js, add company logic
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  const products = await Product.find({});
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured, company } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  // if company exist
+  if (company) {
+    // add new company property to queryobject, and assign value of company that we pulling out from query-string
+    queryObject.company = company;
+  }
+
+  const products = await Product.find(queryObject);
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request using query-param
+
+```sh
+{{URL}}/products?featured=false&company=ikea
+```
+
 <br>
 
 ### 140. Name<a id='140'></a>
+
+- In controllers/products.js, add name logic to search any letter in the name
+
+```js
+const Product = require("../models/product");
+
+const getAllProductsStatic = async (req, res) => {
+  const products = await Product.find({});
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+const getAllProducts = async (req, res) => {
+  // destructuring query
+  const { featured, company, name } = req.query;
+  const queryObject = {};
+
+  if (featured) {
+    queryObject.featured = featured === "true" ? true : false;
+  }
+
+  if (company) {
+    queryObject.company = company;
+  }
+
+  // if name exist
+  if (name) {
+    // add new name property to queryobject, using regex mongodb
+    queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  const products = await Product.find(queryObject);
+  res.status(200).json({ products, nbHits: products.length });
+};
+
+module.exports = {
+  getAllProducts,
+  getAllProductsStatic,
+};
+```
+
+---
+
+- In postman make "Get all products" request using query-param
+  - to search letter in name string
+
+```sh
+{{URL}}/products?name=e
+```
+
+- ref. [mongodb Query and Projection Operators](https://www.mongodb.com/docs/manual/reference/operator/query/)
 
 <br>
 
