@@ -40,6 +40,8 @@
 
 ### 150. Intro<a id='150'></a>
 
+- Think jwt token as long string id-card, that require to enter in gcf, vfj factory
+
 <br>
 
 ### 151. Setup<a id='151'></a>
@@ -66,13 +68,13 @@ const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
 /* Middleware */
-// server frontend
+// serve frontend
 app.use(express.static("./public"));
-// for post req, to parse json
+// for post req, to access req.body
 app.use(express.json());
 
-app.use(notFoundMiddleware);
-app.use(errorHandlerMiddleware);
+app.use(notFoundMiddleware); // page/route not found
+app.use(errorHandlerMiddleware); // custom error
 
 const port = process.env.PORT || 3000;
 
@@ -93,7 +95,7 @@ start();
 
 ### 152. Controllers<a id='152'></a>
 
-- In contollers/main.js, write control logic
+- In contollers/main.js, write controller function
 
 ```js
 const login = async (req, res) => {
@@ -123,6 +125,7 @@ module.exports = {
 const express = require("express");
 const router = express.Router();
 
+// import controller functions
 const { login, dashboard } = require("../controllers/main");
 
 router.route("/dashboard").get(dashboard);
@@ -148,10 +151,7 @@ const mainRouter = require("./routes/main");
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
-/* Middleware */
-// server frontend
 app.use(express.static("./public"));
-// for post req, to parse json
 app.use(express.json());
 
 // using route
@@ -219,7 +219,7 @@ const login = async (req, res) => {
   /* 3 way to validate username, password 
   1. mongoose validation
   2. Joi package
-  3. check in the controller
+  3. check in the controller ✔️
   */
 
   // if username or password not provided throw error
@@ -294,28 +294,23 @@ JWT_SECRET = jwtSecret;
 // send back to fron-end
 // setup authentication so only the request with JWT can access the dasboard
 
+// import jwt
 const jwt = require("jsonwebtoken");
 
 const CustomAPIError = require("../errors/custom-error");
 
 const login = async (req, res) => {
   const { username, password } = req.body;
-  /* 3 way to validate username, password 
-  1. mongoose validation
-  2. Joi package
-  3. check in the controller
-  */
 
-  // if username or password not provided throw error
   if (!username || !password) {
     throw new CustomAPIError("Please provide email and password", 400);
   }
 
   //just for demo, normally provided by DB!!!!
   const id = new Date().getDate();
-
   // try to keep payload small, better experience for user
   // just for demo, in production use long, complex and unguessable string value!!!!!!!!!
+  // the jwt.sign-method take 3 input: payload, signature, options
   const token = jwt.sign({ id, username }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
@@ -353,6 +348,9 @@ module.exports = {
 
 ### 159. Bearer Token - Overview<a id='159'></a>
 
+- we store jwt token in frontend
+- open chrome dev console-> application-> local storage
+
 <br>
 
 ### 160. Send Bearer Token<a id='160'></a>
@@ -375,22 +373,13 @@ const CustomAPIError = require("../errors/custom-error");
 
 const login = async (req, res) => {
   const { username, password } = req.body;
-  /* 3 way to validate username, password 
-  1. mongoose validation
-  2. Joi package
-  3. check in the controller
-  */
 
-  // if username or password not provided throw error
   if (!username || !password) {
     throw new CustomAPIError("Please provide email and password", 400);
   }
 
-  //just for demo, normally provided by DB!!!!
   const id = new Date().getDate();
 
-  // try to keep payload small, better experience for user
-  // just for demo, in production use long, complex and unguessable string value!!!!!!!!!
   const token = jwt.sign({ id, username }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
@@ -399,13 +388,16 @@ const login = async (req, res) => {
 };
 
 const dashboard = async (req, res) => {
+  // access bearer token
   const authHeader = req.headers.authorization;
   console.log(authHeader);
 
+  // if bearer token doesnt exist || not start with "Bearer " then
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new CustomAPIError("No token provided", 401);
   }
 
+  // access token payload
   const token = authHeader.split(" ")[1];
   console.log(token);
 
@@ -455,22 +447,13 @@ const CustomAPIError = require("../errors/custom-error");
 
 const login = async (req, res) => {
   const { username, password } = req.body;
-  /* 3 way to validate username, password 
-  1. mongoose validation
-  2. Joi package
-  3. check in the controller
-  */
 
-  // if username or password not provided throw error
   if (!username || !password) {
     throw new CustomAPIError("Please provide email and password", 400);
   }
 
-  //just for demo, normally provided by DB!!!!
   const id = new Date().getDate();
 
-  // try to keep payload small, better experience for user
-  // just for demo, in production use long, complex and unguessable string value!!!!!!!!!
   const token = jwt.sign({ id, username }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
@@ -480,9 +463,7 @@ const login = async (req, res) => {
 
 const dashboard = async (req, res) => {
   const authHeader = req.headers.authorization;
-  // console.log(authHeader);
 
-  // check if authHeader is not empty AND does not start with "Bearer "
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new CustomAPIError("No token provided", 401);
   }
@@ -491,6 +472,7 @@ const dashboard = async (req, res) => {
   console.log(token);
 
   try {
+    // verify jwt token exist with JWT_SECRET located in .env-file
     const decode = jwt.verify(token, process.env.JWT_SECRET);
 
     // generate random number
@@ -512,7 +494,8 @@ module.exports = {
 
 - open postman make post request and copy token
 - make get request by enterning token in "Header"-tab
-  <br>
+
+ <br>
 
 ### 163. Auth Middleware Setup<a id='163'></a>
 
@@ -532,7 +515,19 @@ module.exports = authenticationMiddleware;
 - In routes/main.js
 
 ```js
+const express = require("express");
+const router = express.Router();
 
+const { login, dashboard } = require("../controllers/main");
+
+// import authMiddleware
+const authMiddleware = require("../middleware/auth");
+
+// passing authmiddleware to route
+router.route("/dashboard").get(authMiddleware, dashboard);
+router.route("/login").post(login);
+
+module.exports = router;
 ```
 
 <br>
@@ -546,6 +541,12 @@ module.exports = authenticationMiddleware;
 <br>
 
 ### 166. Status Codes<a id='166'></a>
+
+```sh
+npm i http-status-codes
+```
+
+- ref [http-status-codes](https://www.npmjs.com/package/http-status-codes)
 
 <br>
 

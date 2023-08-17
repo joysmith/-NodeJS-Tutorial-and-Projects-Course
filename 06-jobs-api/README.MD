@@ -100,37 +100,481 @@
 
 ### 169. Setup<a id='169'></a>
 
+- download the starter template
+- install dependencies
+
+```sh
+npm install
+```
+
+---
+
+- start the dev server
+
+```sh
+npm start
+```
+
+- you should see "Server is listening ...." text
+
+```sh
+http://localhost:3000/
+```
+
 <br>
 
 ### 170. Controllers<a id='170'></a>
+
+- In controllers/auth.js, write register, login controller function
+
+```js
+const register = async (req, res) => {
+  res.send("register user");
+};
+
+const login = async (req, res) => {
+  res.send("login user");
+};
+
+module.exports = {
+  register,
+  login,
+};
+```
+
+---
+
+- In controllers/jobs.js, write CRUD controller function
+
+```js
+const getAllJobs = async (req, res) => {
+  res.send("get all jobs");
+};
+
+const getJob = async (req, res) => {
+  res.send("get job");
+};
+
+const updateJob = async (req, res) => {
+  res.send("update job");
+};
+
+const createJob = async (req, res) => {
+  res.send("create job");
+};
+
+const deleteJob = async (req, res) => {
+  res.send("delete job");
+};
+
+module.exports = {
+  createJob,
+  deleteJob,
+  getAllJobs,
+  updateJob,
+  getJob,
+};
+```
 
 <br>
 
 ### 171. Routes<a id='171'></a>
 
+- In routes/auth.js, setup post method to route
+
+```js
+const express = require("express");
+const router = express.Router();
+
+// import controllers function
+const { register, login } = require("../controllers/auth");
+
+// setup routes
+router.post("/register", register);
+router.post("/login", login);
+
+module.exports = router;
+```
+
+---
+
+- In routes/jobs.js, setup CRUD method to route
+
+```js
+const express = require("express");
+const router = express.Router();
+
+// import CRUD function
+const {
+  createJob,
+  deleteJob,
+  getAllJobs,
+  updateJob,
+  getJob,
+} = require("../controllers/jobs");
+
+// setup routes
+router.route("/").post(createJob).get(getAllJobs);
+
+router.route("/:id").get(getJob).delete(deleteJob).patch(updateJob);
+
+module.exports = router;
+```
+
+---
+
+- In app.js
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+const express = require("express");
+const app = express();
+
+// import routers
+const authRouter = require("./routes/auth");
+const jobsRouter = require("./routes/jobs");
+
+// error handler
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+app.use(express.json());
+
+// TODO:extra packages
+
+// setup routes
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/jobs", jobsRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
+- Open browser to test get route
+
+```sh
+http://localhost:3000/api/v1/jobs/
+
+```
+
 <br>
 
 ### 172. Database Connection<a id='172'></a>
+
+- create .env in root level and provide correct values
+- you can copy from previous project (just change the DB name)
+
+.env
+
+```js
+MONGO_URI=mongodb+srv://joy:<password>@store-api.wqgfx1c.mongodb.net/06-JOBS-API
+```
+
+---
+
+- In app.js import db
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+const express = require("express");
+const app = express();
+
+// connect DB
+const connectDB = require("./db/connect");
+
+const authRouter = require("./routes/auth");
+const jobsRouter = require("./routes/jobs");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+app.use(express.json());
+
+// todo: extra packages
+
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/jobs", jobsRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    // make mongodb network request
+    await connectDB(process.env.MONGO_URI);
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
 
 <br>
 
 ### 173. User Schema<a id='173'></a>
 
+- In models/User.js, writing User schema
+
+```js
+const mongoose = require("mongoose");
+
+const UserSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Please provide name"],
+    maxlength: 50,
+    minlength: 3,
+  },
+
+  email: {
+    type: String,
+    required: [true, "Please provide email"],
+    match: [
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+      "Please provide a valid email",
+    ],
+    unique: true,
+  },
+
+  password: {
+    type: String,
+    required: [true, "Please provide password"],
+    minlength: 6,
+    maxlength: 12,
+  },
+});
+
+module.exports = mongoose.model("User", UserSchema);
+```
+
+---
+
+- ref [String mongoose builtin validator](https://mongoosejs.com/docs/schematypes.html#string-validators)
+
 <br>
 
 ### 174. Create User - Basic Setup<a id='174'></a>
+
+- open postman, create collection, rename to "06-Jobs-API"
+- click on eye icon, and setup as gloabl variable
+
+```sh
+Variable    initial value            current value
+URL         localhost:3000/api/v1    localhost:3000/api/v1
+```
+
+- make a post request
+- type {{ and select URL
+- {{URL}}/auth/register
+- select body-> raw-> json
+
+```js
+{
+  "name":"jhon",
+  "email":"john@gmail.com",
+  "password":"secret"
+}
+```
+
+- click send
+- Save as "Register User" in 06-Jobs-API collection
+
+---
+
+- In controllers/auth.js, import schema, StatusCodes-library
+
+```js
+const User = require("../models/User");
+const { StatusCodes } = require("http-status-codes");
+
+const register = async (req, res) => {
+  // res.send("register user"); // testing
+  // res.json(req.body);  // testing
+
+  // create user in mongodb atals
+  const user = await User.create({ ...req.body });
+
+  // send response to frontend i.e postman
+  res.status(StatusCodes.CREATED).json(user);
+};
+
+const login = async (req, res) => {
+  res.send("login user");
+};
+
+module.exports = {
+  register,
+  login,
+};
+```
 
 <br>
 
 ### 175. Error Checking - Controller Example<a id='175'></a>
 
+- In controllers/auth.js, creat name, email, password are missing validator, inside controller
+
+```js
+const User = require("../models/User");
+const { StatusCodes } = require("http-status-codes");
+const { BadRequestError } = require("../errors");
+
+const register = async (req, res) => {
+  // 1 approach: controller validator
+  const { name, email, password } = req.body;
+  // if name, email, password are missing throw error
+  if (!name || !email || !password) {
+    throw new BadRequestError("Please provide name, email, password");
+  }
+
+  // 2 approach: mongoose builtin validator
+  const user = await User.create({ ...req.body });
+  res.status(StatusCodes.CREATED).json(user);
+};
+
+const login = async (req, res) => {
+  res.send("login user");
+};
+
+module.exports = {
+  register,
+  login,
+};
+```
+
+---
+
+- Open postman and make "Register User" post request
+- select body-> raw-> json
+
+```js
+{
+  "name":"jhon",
+  "email":"john@gmail.com",
+}
+```
+
 <br>
 
 ### 176. Hashing Password Info<a id='176'></a>
 
+- ref. [bcrypt.js library](https://www.npmjs.com/package/bcryptjs)
+
+- install library
+
+```sh
+npm i bcryptjs
+```
+
 <br>
 
 ### 177. Hash User Password<a id='177'></a>
+
+- In controllers/auth.js, bcrypt password and store to mongodb , also send responde to frontend
+
+```js
+const User = require("../models/User");
+const { StatusCodes } = require("http-status-codes");
+const { BadRequestError } = require("../errors");
+// import bcrypt
+const bcrypt = require("bcryptjs");
+
+const register = async (req, res) => {
+  // destructuring body
+  const { name, email, password } = req.body;
+  // generate random bytes with 10 number of rounds
+  const salt = await bcrypt.genSalt(10);
+  // generating hash password
+  const hashedPassword = await bcrypt.hash(password, salt);
+  // passing value to key "password: hashedPassword "
+  const tempUser = { name, email, password: hashedPassword };
+  // store in atlas db
+  const user = await User.create({ ...tempUser });
+
+  // send response to frontend i.e postman -testing
+  res.status(StatusCodes.CREATED).json(user);
+};
+
+const login = async (req, res) => {
+  res.send("login user");
+};
+
+module.exports = {
+  register,
+  login,
+};
+```
+
+---
+
+- In models/User.js remove maxlength from password
+
+```js
+const mongoose = require("mongoose");
+
+const UserSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, "Please provide name"],
+    maxlength: 50,
+    minlength: 3,
+  },
+
+  email: {
+    type: String,
+    required: [true, "Please provide email"],
+    match: [
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+      "Please provide a valid email",
+    ],
+    unique: true,
+  },
+
+  password: {
+    type: String,
+    required: [true, "Please provide password"],
+    minlength: 6,
+    // maxlength: 12,
+  },
+});
+
+module.exports = mongoose.model("User", UserSchema);
+```
+
+- Open postman and make "Register User" post request
+- select body-> raw-> json
+
+```js
+{
+  "name":"jhon",
+  "email":"jenny@gmail.com",
+  "password":"secret"
+}
+```
+
+- Note: ALWAYS ENTER NEW EMAIL NAME
 
 <br>
 
