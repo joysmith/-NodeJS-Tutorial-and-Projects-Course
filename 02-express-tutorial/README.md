@@ -74,6 +74,8 @@
 
 ### 51 HTTP Request/Response Cycle<a id='51'></a>
 
+<img src="notes/server.png" width="400">
+
 - [Course API's](https://course-api.com/slides.html)
 
 <br>
@@ -101,6 +103,7 @@
 
 ### 55 Starter Overview<a id='55'></a>
 
+- from final-folder copy code and paste to app.js
 - Navigate to project folder where package.json is and run
 
 ```sh

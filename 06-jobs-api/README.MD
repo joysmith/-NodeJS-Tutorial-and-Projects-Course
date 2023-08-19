@@ -1468,37 +1468,470 @@ pm.globals.set("accessToken", "jsonData.token");
 
 ### 191. Get Single Job<a id='191'></a>
 
+- TODO:postman
+- In controllers/jobs.js, write controller get logic from db
+
+```js
+const Job = require("../models/Job");
+const { StatusCodes } = require("http-status-codes");
+const { BadRequestError, NotFoundError } = require("../errors");
+
+const getAllJobs = async (req, res) => {
+  const jobs = await Job.find({ createdBy: req.user.userId }).sort("createdAt");
+  res.status(StatusCodes.OK).json({ jobs, count: jobs.length });
+};
+
+// get single job
+const getJob = async (req, res) => {
+  const {
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+
+  const job = await Job.findOne({
+    _id: jobId,
+    createdBy: userId,
+  });
+
+  if (!job) {
+    throw new NotFoundError(`No job with id ${jobId}`);
+  }
+  res.status(StatusCodes.OK).json({ job });
+};
+
+const updateJob = async (req, res) => {
+  res.send("update job");
+};
+
+const createJob = async (req, res) => {
+  req.body.createdBy = req.user.userId;
+  const job = await Job.create(req.body);
+  res.status(StatusCodes.CREATED).json({ job });
+};
+
+const deleteJob = async (req, res) => {
+  res.send("delete job");
+};
+
+module.exports = {
+  createJob,
+  deleteJob,
+  getAllJobs,
+  updateJob,
+  getJob,
+};
+```
+
 <br>
 
 ### 192. Update Job<a id='192'></a>
+
+- TODO:postman
+- In controllers/jobs.js, write update controller logic from db
+
+```js
+const Job = require("../models/Job");
+const { StatusCodes } = require("http-status-codes");
+const { BadRequestError, NotFoundError } = require("../errors");
+
+const getAllJobs = async (req, res) => {
+  const jobs = await Job.find({ createdBy: req.user.userId }).sort("createdAt");
+  res.status(StatusCodes.OK).json({ jobs, count: jobs.length });
+};
+
+const getJob = async (req, res) => {
+  const {
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+
+  const job = await Job.findOne({
+    _id: jobId,
+    createdBy: userId,
+  });
+  if (!job) {
+    throw new NotFoundError(`No job with id ${jobId}`);
+  }
+  res.status(StatusCodes.OK).json({ job });
+};
+
+// updatejob
+const updateJob = async (req, res) => {
+  // destructuring req object
+  const {
+    // destructuring body object i,e nested destructuring
+    body: { company, position },
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+
+  if (company === "" || position === "") {
+    throw new BadRequestError("Company or Position fields cannot be empty");
+  }
+  const job = await Job.findByIdAndUpdate(
+    { _id: jobId, createdBy: userId },
+    req.body,
+    { new: true, runValidators: true }
+  );
+  if (!job) {
+    throw new NotFoundError(`No job with id ${jobId}`);
+  }
+  res.status(StatusCodes.OK).json({ job });
+};
+
+const createJob = async (req, res) => {
+  req.body.createdBy = req.user.userId;
+  const job = await Job.create(req.body);
+  res.status(StatusCodes.CREATED).json({ job });
+};
+
+const deleteJob = async (req, res) => {
+  res.send("delete job");
+};
+
+module.exports = {
+  createJob,
+  deleteJob,
+  getAllJobs,
+  updateJob,
+  getJob,
+};
+```
 
 <br>
 
 ### 193. Remove Job<a id='193'></a>
 
+- TODO:postman
+- In controllers/jobs.js, write delete controller logic from db
+
+```js
+const Job = require("../models/Job");
+const { StatusCodes } = require("http-status-codes");
+const { BadRequestError, NotFoundError } = require("../errors");
+
+const getAllJobs = async (req, res) => {
+  const jobs = await Job.find({ createdBy: req.user.userId }).sort("createdAt");
+  res.status(StatusCodes.OK).json({ jobs, count: jobs.length });
+};
+
+const getJob = async (req, res) => {
+  const {
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+
+  const job = await Job.findOne({
+    _id: jobId,
+    createdBy: userId,
+  });
+  if (!job) {
+    throw new NotFoundError(`No job with id ${jobId}`);
+  }
+  res.status(StatusCodes.OK).json({ job });
+};
+
+const updateJob = async (req, res) => {
+  const {
+    body: { company, position },
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+
+  if (company === "" || position === "") {
+    throw new BadRequestError("Company or Position fields cannot be empty");
+  }
+  const job = await Job.findByIdAndUpdate(
+    { _id: jobId, createdBy: userId },
+    req.body,
+    { new: true, runValidators: true }
+  );
+  if (!job) {
+    throw new NotFoundError(`No job with id ${jobId}`);
+  }
+  res.status(StatusCodes.OK).json({ job });
+};
+
+const createJob = async (req, res) => {
+  req.body.createdBy = req.user.userId;
+  const job = await Job.create(req.body);
+  res.status(StatusCodes.CREATED).json({ job });
+};
+
+// delete job from db
+const deleteJob = async (req, res) => {
+  const {
+    user: { userId },
+    params: { id: jobId },
+  } = req;
+
+  const job = await Job.findByIdAndRemove({
+    _id: jobId,
+    createdBy: userId,
+  });
+  if (!job) {
+    throw new NotFoundError(`No job with id ${jobId}`);
+  }
+  res.status(StatusCodes.OK).send();
+};
+
+module.exports = {
+  createJob,
+  deleteJob,
+  getAllJobs,
+  updateJob,
+  getJob,
+};
+```
+
 <br>
 
 ### 194. Duplicate Error<a id='194'></a>
+
+- TODO:postman
+- In middleware/error-handler.js, write duplication error handler
+
+```js
+const { CustomAPIError } = require("../errors");
+const { StatusCodes } = require("http-status-codes");
+
+const errorHandlerMiddleware = (err, req, res, next) => {
+  let customError = {
+    // set default
+    statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
+    msg: err.message || "Something went wrong try again later",
+  };
+
+  if (err instanceof CustomAPIError) {
+    return res.status(err.statusCode).json({ msg: err.message });
+  }
+
+  // handle duplication error
+  if (err.code && err.code === 11000) {
+    customError.msg = `Duplicate value entered for ${Object.keys(
+      err.keyValue
+    )} field, please choose another value`;
+    customError.statusCode = 400;
+  }
+
+  // return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ err });
+  return res.status(customError.statusCode).json({ msg: customError.msg });
+};
+
+module.exports = errorHandlerMiddleware;
+```
 
 <br>
 
 ### 195. Custom Error<a id='195'></a>
 
+- TODO:postman
+- In middleware/error-handler.js, remove customAPIError import, and if condition
+
+```js
+//---Remove
+// const { CustomAPIError } = require("../errors");
+
+const { StatusCodes } = require("http-status-codes");
+
+const errorHandlerMiddleware = (err, req, res, next) => {
+  let customError = {
+    // set default
+    statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
+    msg: err.message || "Something went wrong try again later",
+  };
+
+  //---Remove
+  // if (err instanceof CustomAPIError) {
+  //   return res.status(err.statusCode).json({ msg: err.message });
+  // }
+
+  // handle duplication error
+  if (err.code && err.code === 11000) {
+    customError.msg = `Duplicate value entered for ${Object.keys(
+      err.keyValue
+    )} field, please choose another value`;
+    customError.statusCode = 400;
+  }
+
+  // return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ err });
+  return res.status(customError.statusCode).json({ msg: customError.msg });
+};
+
+module.exports = errorHandlerMiddleware;
+```
+
 <br>
 
 ### 196. Validation Error<a id='196'></a>
+
+- TODO:postman
+- In middleware/error-handler.js, add validation error condition
+
+```js
+const { StatusCodes } = require("http-status-codes");
+
+const errorHandlerMiddleware = (err, req, res, next) => {
+  let customError = {
+    statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
+    msg: err.message || "Something went wrong try again later",
+  };
+
+  // validation error
+  if (err.name === "ValidationError") {
+    customError.msg = Object.values(err.errors)
+      .map((item) => item.message)
+      .join(",");
+    customError.statusCode = 400;
+  }
+
+  if (err.code && err.code === 11000) {
+    customError.msg = `Duplicate value entered for ${Object.keys(
+      err.keyValue
+    )} field, please choose another value`;
+    customError.statusCode = 400;
+  }
+
+  return res.status(customError.statusCode).json({ msg: customError.msg });
+};
+
+module.exports = errorHandlerMiddleware;
+```
 
 <br>
 
 ### 197. Cast Error<a id='197'></a>
 
+- TODO:postman
+- In middleware/error-handler.js, add cast error condition
+
+```js
+const { StatusCodes } = require("http-status-codes");
+
+const errorHandlerMiddleware = (err, req, res, next) => {
+  let customError = {
+    statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
+    msg: err.message || "Something went wrong try again later",
+  };
+
+  if (err.name === "ValidationError") {
+    customError.msg = Object.values(err.errors)
+      .map((item) => item.message)
+      .join(",");
+    customError.statusCode = 400;
+  }
+
+  if (err.code && err.code === 11000) {
+    customError.msg = `Duplicate value entered for ${Object.keys(
+      err.keyValue
+    )} field, please choose another value`;
+    customError.statusCode = 400;
+  }
+
+  // cast error condition
+  if (err.name === "CastError") {
+    customError.msg = `No item found with id : ${err.value}`;
+    customError.statusCode = 404;
+  }
+
+  return res.status(customError.statusCode).json({ msg: customError.msg });
+};
+
+module.exports = errorHandlerMiddleware;
+```
+
 <br>
 
 ### 198. Security Info and Packages<a id='198'></a>
 
+- [Helmet](https://www.npmjs.com/package/helmet) :
+
+```sh
+npm i helmet
+```
+
+- [cors](https://www.npmjs.com/package/cors) : how our api is access from diff domain
+
+```sh
+npm i cors
+```
+
+- [xss-clean](https://www.npmjs.com/package/xss-clean) : protect from cross-side scripting attack
+
+```sh
+npm i xss-clean
+```
+
+- [express-rate-limit](https://www.npmjs.com/package/express-rate-limit) :
+
+```sh
+npm i express-rate-limit
+```
+
 <br>
 
 ### 199. Security Setup<a id='199'></a>
+
+- In app.js import security library and use them as middleware
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+
+// extra security packages
+const helmet = require("helmet");
+const cors = require("cors");
+const xss = require("xss-clean");
+const rateLimiter = require("express-rate-limit");
+
+const express = require("express");
+const app = express();
+
+const connectDB = require("./db/connect");
+const authenticateUser = require("./middleware/authentication");
+
+const authRouter = require("./routes/auth");
+const jobsRouter = require("./routes/jobs");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+// security packgate use in middleware
+app.set("trust proxy", 1); // for heroku depolyment
+app.use(
+  rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+  })
+);
+
+app.use(express.json());
+// extra packages
+app.use(helmet());
+app.use(cors());
+app.use(xss());
+
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/jobs", authenticateUser, jobsRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 3000;
+
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URI);
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
 
 <br>
 
@@ -1528,11 +1961,15 @@ pm.globals.set("accessToken", "jsonData.token");
 
 ### 206. Export Postman Docs<a id='206'></a>
 
+- open postman, select "06-Jobs-API" collection-> export
+
 <br>
 
 ### 207. APIMATIC Info<a id='207'></a>
 
-<br>
+- [apimatic](https://www.apimatic.io/)
+- singup for free account
+- <br>
 
 ### 208. APIMATIC Setup<a id='208'></a>
 
@@ -1555,5 +1992,18 @@ pm.globals.set("accessToken", "jsonData.token");
 <br>
 
 ### 213. Render Deployment<a id='213'></a>
+
+- New-> Web Service-> New Web Service-> connect github-> connect
+  - name: temp-jobs-api
+  - environment: node
+  - region: Oregon(west)
+  - branch: main
+  - build command: npm install
+  - start commant: node app.js
+  - free
+  - advance-> add environment variable:
+    <img src="notes/env.png" width="400">
+  - auto deploy: yes
+  - click "create Web Service"
 
 <br>
