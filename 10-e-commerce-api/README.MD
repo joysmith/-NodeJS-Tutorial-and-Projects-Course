@@ -2959,6 +2959,101 @@ module.exports = {
 - [] set timestamps
 - [] export Product model
 
+- In models folder create Products.js
+
+```js
+const mongoose = require("mongoose");
+
+const ProductSchema = new mongoose.Schema(
+  // Nested Object
+  {
+    name: {
+      type: String,
+      // remove any white space
+      trim: true,
+      required: [true, "Please provide product name"],
+      maxlength: [100, "Name can not be more than 100 characters"],
+    },
+
+    price: {
+      type: Number,
+      required: [true, "Please provide product price"],
+      default: 0,
+    },
+
+    description: {
+      type: String,
+      required: [true, "Please provide product description"],
+      maxlength: [1000, "Description can not be more than 1000 characters"],
+    },
+
+    image: {
+      type: String,
+      // use default image to upload, in case user not provide
+      default: "/uploads/example.jpeg",
+    },
+
+    category: {
+      type: String,
+      required: [true, "Please provide product category"],
+      // 1 way to setup enum as array
+      enum: ["office", "kitchen", "bedroom"],
+    },
+
+    company: {
+      type: String,
+      required: [true, "Please provide company"],
+      // 2 way to setup enum as object, by accessing value
+      enum: {
+        values: ["ikea", "liddy", "marcos"],
+        message: "{VALUE} is not supported",
+      },
+    },
+
+    colors: {
+      type: [String],
+      default: ["#222"],
+      required: true,
+    },
+
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+
+    freeShipping: {
+      type: Boolean,
+      default: false,
+    },
+
+    inventory: {
+      type: Number,
+      required: true,
+      default: 15,
+    },
+
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+
+    numOfReviews: {
+      type: Number,
+      default: 0,
+    },
+
+    user: {
+      type: mongoose.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Product", ProductSchema);
+```
+
 <br>
 
 ### 311. Product Routes - Structure<a id='311'></a>
@@ -2976,9 +3071,178 @@ module.exports = {
 - [] import productRoutes as productRouter in the app.js
 - [] setup app.use('/api/v1/products', productRouter)
 
+- In controllers folder create productController.js, create 6 controllers
+
+```js
+const createProduct = async (req, res) => {
+  res.send("create product");
+};
+
+const getAllProducts = async (req, res) => {
+  res.send("get all product");
+};
+const getSingleProduct = async (req, res) => {
+  res.send("get single product");
+};
+
+const updateProduct = async (req, res) => {
+  res.send("update product");
+};
+const deleteProduct = async (req, res) => {
+  res.send("delete product");
+};
+
+const uploadImage = async (req, res) => {
+  res.send("upload image");
+};
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  uploadImage,
+};
+```
+
+---
+
+- In routes folder create productRoutes.js,
+
+```js
+// took 3 import from userRoutes setup, copy & paste
+const express = require("express");
+const router = express.Router();
+const {
+  authenticateUser,
+  authorizePermissions,
+} = require("../middleware/authentication");
+
+const {
+  createProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  uploadImage,
+} = require("../controllers/productController");
+
+router
+  .route("/")
+  .post([authenticateUser, authorizePermissions("admin")], createProduct)
+  .get(getAllProducts); // accessible to public
+
+router
+  .route("/uploadImage")
+  .post([authenticateUser, authorizePermissions("admin")], uploadImage);
+
+// wildcard route always write in botton -express rule
+router
+  .route("/:id")
+  .get(getSingleProduct) // accessible to public
+  .patch([authenticateUser, authorizePermissions("admin")], updateProduct)
+  .delete([authenticateUser, authorizePermissions("admin")], deleteProduct);
+
+module.exports = router;
+```
+
+---
+
+- In app.js
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+
+const express = require("express");
+const app = express();
+
+const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
+
+const connectDB = require("./db/connect");
+
+//  import productrouter
+const authRouter = require("./routes/authRoutes");
+const userRouter = require("./routes/userRoutes");
+const productRouter = require("./routes/productRoutes");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+app.use(morgan("tiny"));
+app.use(express.json());
+app.use(cookieParser(process.env.JWT_SECRET));
+
+app.get("/", (req, res) => {
+  res.send("e-commerce api");
+});
+
+app.get("/api/v1", (req, res) => {
+  console.log(req.signedCookies);
+  res.send("e-commerce api");
+});
+
+// setup product route middleware
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/products", productRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 5000;
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URL);
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
 <br>
 
 ### 312. Product Routes - Postman<a id='312'></a>
+
+- Open postman, make "Login User" request and log in as admin
+- In Product folder, setup following method request
+
+---
+
+- get "{{URL}}/products"
+  - save as "Get All Products", in ecommerce inside Product-folder, send request to test connection
+
+---
+
+- post "{{URL}}/products"
+  - save as "Create Product", send request to test connection
+
+---
+
+- get "{{URL}}/products/id_123"
+  - save as "Get Single Products", send request to test connection
+
+---
+
+- patch "{{URL}}/products/id_123"
+  - save as "Update Products", send request to test connection
+
+---
+
+- delete "{{URL}}/products/id_123"
+  - save as "Delete Products", send request to test connection
+
+---
+
+- post "{{URL}}/products/uploadImage"
+  - save as "Upload Image", send request to test connection
 
 <br>
 
@@ -2987,6 +3251,66 @@ module.exports = {
 - [] create user property on req.body and set it equal to userId (req.user)
 - [] pass req.body into Product.create
 - [] send back the product
+
+- In controllers/productController.js
+
+```js
+// import Product, statuscodes, custom error
+const Product = require("../models/Product");
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+
+// create product
+const createProduct = async (req, res) => {
+  req.body.user = req.user.userId;
+  const product = await Product.create(req.body);
+  res.status(StatusCodes.CREATED).json({ product });
+};
+
+const getAllProducts = async (req, res) => {
+  res.send("get all product");
+};
+const getSingleProduct = async (req, res) => {
+  res.send("get single product");
+};
+
+const updateProduct = async (req, res) => {
+  res.send("update product");
+};
+const deleteProduct = async (req, res) => {
+  res.send("delete product");
+};
+
+const uploadImage = async (req, res) => {
+  res.send("upload image");
+};
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  uploadImage,
+};
+```
+
+---
+
+- Open postman, make "Login User" request and log in as admin
+- In Product folder, make "Create Product" request
+  - select-> raw ->json
+  - use mockdata
+  - NOTE- not to write everything because we setup default value
+
+```js
+ {
+    "name": "testing produc",
+    "company": "marcos",
+    "description": "some description",
+    "category": "office"
+  }
+```
 
 <br>
 
@@ -2999,12 +3323,381 @@ module.exports = {
 - [] typical CRUD, utilize (task or job) project
 - [] remember we check already for role 'admin'
 
+- In controllers/productController.js
+
+```js
+const Product = require("../models/Product");
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+
+const createProduct = async (req, res) => {
+  req.body.user = req.user.userId;
+  const product = await Product.create(req.body);
+  res.status(StatusCodes.CREATED).json({ product });
+};
+
+const getAllProducts = async (req, res) => {
+  const products = await Product.find({});
+  res.status(StatusCodes.OK).json({ products, count: products.length });
+};
+
+const getSingleProduct = async (req, res) => {
+  const { id: productId } = req.params;
+  const product = await Product.findOne({ _id: productId });
+
+  // condition if product doesn't exist
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ product });
+};
+
+const updateProduct = async (req, res) => {
+  const { id: productId } = req.params;
+  const product = await Product.findOneAndUpdate({ _id: productId }, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ product });
+};
+
+const deleteProduct = async (req, res) => {
+  const { id: productId } = req.params;
+
+  const product = await Product.findOne({ _id: productId });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  await product.remove();
+  res.status(StatusCodes.OK).json({ msg: "Success! Product removed." });
+};
+
+const uploadImage = async (req, res) => {
+  res.send("upload Image");
+};
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  uploadImage,
+};
+```
+
+- Open postman, make "Login User" request and log in as admin
+- In Product folder, make "Get All Products" request, copy id any one
+- In Product folder, make "Get Single Product" request, by pasting id
+- In Product folder, make "Update Product" request, by pasting id
+
+```js
+ {
+    "name": "new testing product",
+  }
+```
+
+- In Product folder, make "Delete Product" request, by pasting id
+
 <br>
 
 ### 315. Upload Image Controller<a id='315'></a>
 
 - [] if some question, re-watch 07-file-upload
 - [] images folder with two images
+
+- create public folder in rootlevel, inside public-folder create uploads-subfolder
+- [express-fileupload](https://www.npmjs.com/package/express-fileupload)
+
+```js
+npm i express-fileupload
+```
+
+- In app.js import
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+
+const express = require("express");
+const app = express();
+
+const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
+// import fileUpload file package
+const fileUpload = require("express-fileupload");
+
+const connectDB = require("./db/connect");
+
+const authRouter = require("./routes/authRoutes");
+const userRouter = require("./routes/userRoutes");
+const productRouter = require("./routes/productRoutes");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+app.use(morgan("tiny"));
+app.use(express.json());
+app.use(cookieParser(process.env.JWT_SECRET));
+
+// setup publi, fileUpload middleware
+app.use(express.static("./public"));
+app.use(fileUpload());
+
+app.get("/", (req, res) => {
+  res.send("e-commerce api");
+});
+
+app.get("/api/v1", (req, res) => {
+  console.log(req.signedCookies);
+  res.send("e-commerce api");
+});
+
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/products", productRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 5000;
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URL);
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
+---
+
+- copy and paste "example.png" image in public/uploads from google image
+- Open postman, make "Login User" request and log in as admin
+- In Product folder, make "Create Products" request,
+
+```js
+{
+    "name": "armchair1",
+    "company": "marcos",
+    "description": "Cloud ",
+    "category": "bedroom"
+  }
+
+```
+
+- go to localhost "http://localhost:5000/uploads/example.jpeg"
+
+---
+
+- In controllers/productController.js
+
+```js
+const Product = require("../models/Product");
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+
+const createProduct = async (req, res) => {
+  req.body.user = req.user.userId;
+  const product = await Product.create(req.body);
+  res.status(StatusCodes.CREATED).json({ product });
+};
+
+const getAllProducts = async (req, res) => {
+  const products = await Product.find({});
+  res.status(StatusCodes.OK).json({ products, count: products.length });
+};
+
+const getSingleProduct = async (req, res) => {
+  const { id: productId } = req.params;
+  const product = await Product.findOne({ _id: productId });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ product });
+};
+
+const updateProduct = async (req, res) => {
+  const { id: productId } = req.params;
+  const product = await Product.findOneAndUpdate({ _id: productId }, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ product });
+};
+
+const deleteProduct = async (req, res) => {
+  const { id: productId } = req.params;
+
+  const product = await Product.findOne({ _id: productId });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  await product.remove();
+  res.status(StatusCodes.OK).json({ msg: "Success! Product removed." });
+};
+
+const uploadImage = async (req, res) => {
+  // for testing
+  console.log(req.files);
+  res.send("upload image");
+};
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  uploadImage,
+};
+```
+
+---
+
+- Open postman,In Auth-folder make "Login User" request and log in as admin
+- In Product folder, make "Upload Image" request, check terminal
+  - select-> body-> form-data->
+
+```sh
+KEY(File)   Select Files
+image
+
+```
+
+---
+
+- Controllers/productControllers.js
+
+```js
+const Product = require("../models/Product");
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+
+const createProduct = async (req, res) => {
+  req.body.user = req.user.userId;
+  const product = await Product.create(req.body);
+  res.status(StatusCodes.CREATED).json({ product });
+};
+
+const getAllProducts = async (req, res) => {
+  const products = await Product.find({});
+  res.status(StatusCodes.OK).json({ products, count: products.length });
+};
+
+const getSingleProduct = async (req, res) => {
+  const { id: productId } = req.params;
+  const product = await Product.findOne({ _id: productId });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ product });
+};
+
+const updateProduct = async (req, res) => {
+  const { id: productId } = req.params;
+  const product = await Product.findOneAndUpdate({ _id: productId }, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ product });
+};
+
+const deleteProduct = async (req, res) => {
+  const { id: productId } = req.params;
+
+  const product = await Product.findOne({ _id: productId });
+
+  if (!product) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  await product.remove();
+  res.status(StatusCodes.OK).json({ msg: "Success! Product removed." });
+};
+
+const uploadImage = async (req, res) => {
+  // condition: if there is no file
+  if (!req.files) {
+    throw new CustomError.BadRequestError("No File Uploaded");
+  }
+  const productImage = req.files.image;
+
+  // condition: check mime type property, if its not image trow error
+  if (!productImage.mimetype.startsWith("image")) {
+    throw new CustomError.BadRequestError("Please Upload Image");
+  }
+
+  const maxSize = 1024 * 1024;
+
+  // condition : image size is maximum throw error
+  if (productImage.size > maxSize) {
+    throw new CustomError.BadRequestError(
+      "Please upload image smaller than 1MB"
+    );
+  }
+
+  //
+  const imagePath = path.join(
+    __dirname,
+    "../public/uploads/" + `${productImage.name}`
+  );
+
+  // upload image
+  await productImage.mv(imagePath);
+
+  res.status(StatusCodes.OK).json({ image: `/uploads/${productImage.name}` });
+};
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  uploadImage,
+};
+```
+
+- Open postman,In Auth-folder make "Login User" request and log in as admin
+- In Product folder, make "Upload Image" request, check terminal
+  - select-> body-> form-data->
+  - check project folder public/upload
+
+```sh
+KEY(File)   Select Files
+image
+
+```
 
 <br>
 
@@ -3020,9 +3713,70 @@ module.exports = {
 - [] set timestamps
 - [] export Review model
 
+- In controllers folder create, Review.js
+- Note: the user will write review on product
+
+```js
+const mongoose = require("mongoose");
+
+const ReviewSchema = mongoose.Schema(
+  {
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: [true, "Please provide rating"],
+    },
+
+    title: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide review title"],
+      maxlength: 100,
+    },
+
+    comment: {
+      type: String,
+      required: [true, "Please provide review text"],
+    },
+
+    // reference user id
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    // reference product id
+    product: {
+      type: mongoose.Schema.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+  },
+
+  { timestamps: true }
+);
+
+// user can leave one revie on 1 product
+ReviewSchema.index({ product: 1, user: 1 }, { unique: true });
+
+module.exports = mongoose.model("Review", ReviewSchema);
+```
+
 <br>
 
 ### 317. Review Routes Structure<a id='317'></a>
+
+- [] add reviewController file in controllers
+- [] export (createReview, getAllReviews, getSingleReview, updateReview, deleteReview) functions
+- [] res.send('function name')
+- [] setup reviewRoutes file in routes
+- [] import all controllers
+- [] only getAllReviews and getSingleReview accessible to public
+- [] rest only to users (setup middleware)
+- [] typical REST setup
+- [] import reviewRoutes as reviewRouter in the app.js
+- [] setup app.use('/api/v1/reviews', reviewRouter)
 
 <br>
 
@@ -3032,17 +3786,40 @@ module.exports = {
 
 ### 319. Create Review Controller<a id='319'></a>
 
+- [] check for product in the req.body
+- [] attach user property (set it equal to req.user.userId) on to req.body
+- [] create review
+- [] don't test yet
+
 <br>
 
 ### 320. Get All Reviews and Get Single Review Controller<a id='320'></a>
+
+- [] both public routes, typical setup
 
 <br>
 
 ### 321. Delete Review Controller<a id='321'></a>
 
+- [] get id from req.params
+- [] check if review exists
+- [] if no review, 404
+- [] check permissions (req.user, review.user)
+- [] use await review.remove()
+- [] send back 200
+
 <br>
 
 ### 322. Update Review Controller<a id='322'></a>
+
+- [] get id from req.params
+- [] get {rating, title comment} from req.body
+- [] check if review exists
+- [] if no review, 404
+- [] check permissions
+- [] set review properties equal to rating, title, comment
+- [] use await review.save()
+- [] send back 200
 
 <br>
 
@@ -3084,9 +3861,36 @@ module.exports = {
 
 ### 332. Order Schema<a id='332'></a>
 
+- [] create Order.js in models folder
+- [] create Schema
+- [] tax : {type:Number}
+- [] shippingFee: {type:Number}
+- [] subtotal: {type:Number}
+- [] total: {type:Number}
+- [] orderItems:[]
+- [] status:{type:String}
+- [] user
+- [] clientSecret:{type:String}
+- [] paymentId:{type:String}
+- [] set timestamps
+- [] export Order model
+
 <br>
 
 ### 333. Order Structure<a id='333'></a>
+
+- [] add orderController file in controllers
+- [] export (getAllOrders, getSingleOrder, getCurrentUserOrders,
+  createOrder, updateOrder) functions
+- [] res.send('function name')
+- [] setup orderRoutes file in routes
+- [] import all controllers
+- [] authenticate user in all routes
+- [] getAllOrders admin only
+- [] typical REST setup
+- [] router.route('/showAllMyOrders').get(getCurrentUserOrders)
+- [] import orderRoutes as orderRouter in the app.js
+- [] setup app.use('/api/v1/orders', orderRouter)
 
 <br>
 
@@ -3096,13 +3900,26 @@ module.exports = {
 
 ### 335. Create Order - Check Product<a id='335'></a>
 
+- [] most complex
+
 <br>
 
 ### 336. Create Order - Complete<a id='336'></a>
 
+- [] getAllOrders - admin only
+- [] getSingleOrder - chechPermissions
+
 <br>
 
 ### 337. All Order Routes<a id='337'></a>
+
+- [] get order id
+- [] get paymentIntentId (req.body)
+- [] get order
+- [] if does not exist - 404
+- [] check permissions
+- [] set paymentIntentId and status as 'paid'
+- [] order.save()
 
 <br>
 
@@ -3112,13 +3929,42 @@ module.exports = {
 
 ### 339. Docgen - Create Docs<a id='339'></a>
 
+- [] [Docgen Library] (https://github.com/thedevsaddam/docgen)
+- [] Export Postman Collection
+- [] docgen build -i fileName.json -o index.html
+- [] create index.html in public
+
 <br>
 
 ### 340. Security Packages<a id='340'></a>
 
+- [] express-rate-limiter
+- [] helmet
+- [] xss-clean
+- [] express-mongo-sanitize
+- [] cors (cookies!!!!)
+
 <br>
 
 ### 341. Deploy on Heroku<a id='341'></a>
+
+- [] heroku account and heroku cli
+- [] remove/copy from the main repo
+- [] add dev command "nodemon app.js"
+- [] change start to "node app.js"
+- [] setup node version in package.json
+- [] "engines": {"node": "14.x"}
+- [] Procfile "web: node app.js"
+- [] remove existing git repo
+- [] rm -rf .git - mac,
+- [] git init
+- [] git add .
+- [] git commit -m "initial commit"
+- [] heroku login
+- [] heroku create "App Name"
+- [] git remote -v
+- [] setup env vars in GUI
+- [] git push heroku master/main
 
 <br>
 
