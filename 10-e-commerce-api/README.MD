@@ -5204,9 +5204,172 @@ module.exports = mongoose.model("Order", OrderSchema);
 - [] import orderRoutes as orderRouter in the app.js
 - [] setup app.use('/api/v1/orders', orderRouter)
 
+- In controllers folder create orderController.js file
+
+```js
+const createOrder = async (req, res) => {
+  res.send("create order");
+};
+
+const getAllOrders = async (req, res) => {
+  res.send("get all order");
+};
+
+const getSingleOrder = async (req, res) => {
+  res.send("get single order");
+};
+
+const getCurrentUserOrders = async (req, res) => {
+  res.send("get current user order");
+};
+
+const updateOrder = async (req, res) => {
+  res.send("update order");
+};
+
+module.exports = {
+  getAllOrders,
+  getSingleOrder,
+  getCurrentUserOrders,
+  createOrder,
+  updateOrder,
+};
+```
+
+---
+
+- In routes folder create orderRoutes.js
+
+```js
+const express = require("express");
+const router = express.Router();
+const {
+  authenticateUser,
+  authorizePermissions,
+} = require("../middleware/authentication");
+
+const {
+  getAllOrders,
+  getSingleOrder,
+  getCurrentUserOrders,
+  createOrder,
+  updateOrder,
+} = require("../controllers/orderController");
+
+router
+  .route("/")
+  .post(authenticateUser, createOrder)
+  .get(authenticateUser, authorizePermissions("admin"), getAllOrders);
+
+router.route("/showAllMyOrders").get(authenticateUser, getCurrentUserOrders);
+
+router
+  .route("/:id")
+  .get(authenticateUser, getSingleOrder)
+  .patch(authenticateUser, updateOrder);
+
+module.exports = router;
+```
+
+---
+
+- In app.js
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+
+const express = require("express");
+const app = express();
+
+const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
+const fileUpload = require("express-fileupload");
+
+const connectDB = require("./db/connect");
+
+const authRouter = require("./routes/authRoutes");
+const userRouter = require("./routes/userRoutes");
+const productRouter = require("./routes/productRoutes");
+const reviewRouter = require("./routes/reviewRoutes");
+//  import order routers
+const orderRouter = require("./routes/orderRoutes");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+app.use(morgan("tiny"));
+app.use(express.json());
+app.use(cookieParser(process.env.JWT_SECRET));
+
+app.use(express.static("./public"));
+app.use(fileUpload());
+
+app.get("/", (req, res) => {
+  res.send("e-commerce api");
+});
+
+app.get("/api/v1", (req, res) => {
+  console.log(req.signedCookies);
+  res.send("e-commerce api");
+});
+
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/products", productRouter);
+app.use("/api/v1/reviews", reviewRouter);
+// setup order router middleware
+app.use("/api/v1/orders", orderRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 5000;
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URL);
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
 <br>
 
 ### 334. Order - Postman Setup<a id='334'></a>
+
+- Open postman, make "Login User" request and log in as admin
+- In Order folder, setup following method request
+
+---
+
+- post "{{URL}}/orders"
+  - save as "Create Order", in ecommerce inside Order-folder, send request to test connection
+
+---
+
+- get "{{URL}}/orders"
+  - save as "Get All Orders", send request to test connection
+
+---
+
+- get "{{URL}}/orders/id_123"
+  - save as "Get Single Order", send request to test connection
+
+---
+
+- patch "{{URL}}/orders/id_123"
+  - save as "Update Orders", send request to test connection
+
+---
+
+- get "{{URL}}/orders/showAllMyOrders"
+  - save as "Show Current User Order", send request to test connection
 
 <br>
 
@@ -5214,12 +5377,259 @@ module.exports = mongoose.model("Order", OrderSchema);
 
 - [] most complex
 
+- Open postman, from Product folder make "Get all product" request. copy id
+- from Order folder make "Create Order" request
+  - select-> body-> raw-> json
+
+```js
+{
+    "tax": 399,
+    "shippingFee": 499,
+    "items": [
+      {
+        "name": "accent chair",
+        "price": 2599,
+        "image": "https://dl.airtable.com/.attachmentThumbnails/e8bc3791196535af65f40e36993b9e1f/438bd160",
+        "amount": 34,
+        "product": "-- paste product id here --"
+      }
+    ]
+  }
+```
+
+---
+
+- In controllers/orderController.js
+
+```js
+const Order = require("../models/Order");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const createOrder = async (req, res) => {
+  // destructuring req.body obj
+  const { items: cartItems, tax, shippingFee } = req.body;
+
+  // condtion cart item not exist and cart length is 1
+  if (!cartItems || cartItems.length < 1) {
+    throw new CustomError.BadRequestError("No cart items provided");
+  }
+
+  // condition if no tax, no shipping fee
+  if (!tax || !shippingFee) {
+    throw new CustomError.BadRequestError(
+      "Please provide tax and shipping fee"
+    );
+  }
+
+  let orderItems = [];
+  let subtotal = 0;
+
+  for (const item of cartItems) {
+    const dbProduct = await Product.findOne({ _id: item.product });
+
+    // if product is missing
+    if (!dbProduct) {
+      throw new CustomError.NotFoundError(
+        `No product with id : ${item.product}`
+      );
+    }
+
+    const { name, price, image, _id } = dbProduct;
+
+    // setup single item order obj
+    const singleOrderItem = {
+      amount: item.amount,
+      name,
+      price,
+      image,
+      product: _id,
+    };
+
+    // add item to order
+    orderItems = [...orderItems, singleOrderItem];
+    // calculate subtotal
+    subtotal += item.amount * price;
+  }
+
+  console.log(orderItems);
+  console.log(subtotal);
+  res.send("create order");
+};
+
+const getAllOrders = async (req, res) => {
+  res.send("get all order");
+};
+
+const getSingleOrder = async (req, res) => {
+  res.send("get single order");
+};
+
+const getCurrentUserOrders = async (req, res) => {
+  res.send("get current user order");
+};
+
+const updateOrder = async (req, res) => {
+  res.send("update order");
+};
+
+module.exports = {
+  getAllOrders,
+  getSingleOrder,
+  getCurrentUserOrders,
+  createOrder,
+  updateOrder,
+};
+```
+
+---
+
+- Open postman, from Product folder make "Get all product" request. copy 2 product id
+- from Order folder make "Create Order" request
+  - select-> body-> raw-> json
+
+```js
+  {
+    "tax": 499,
+    "shippingFee": 799,
+    "items": [
+      {
+        "name": "bed",
+        "price": 2699,
+        "image": "https://dl.airtable.com/.attachmentThumbnails/e8bc3791196535af65f40e36993b9e1f/438bd160",
+        "amount": 3,
+        "product": "--paste 1 product id here--"
+      },
+      {
+        "name": "chair",
+        "price": 2999,
+        "image": "https://dl.airtable.com/.attachmentThumbnails/e8bc3791196535af65f40e36993b9e1f/438bd160",
+        "amount": 2,
+        "product": "--paste 2 product id here--"
+      }
+    ]
+  }
+```
+
 <br>
 
 ### 336. Create Order - Complete<a id='336'></a>
 
 - [] getAllOrders - admin only
 - [] getSingleOrder - chechPermissions
+
+- In controllers/orderController.js
+
+```js
+const Order = require("../models/Order");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const fakeStripeAPI = async ({ amount, currency }) => {
+  const client_secret = "someRandomValue";
+  return { client_secret, amount };
+};
+
+const createOrder = async (req, res) => {
+  // destructuring req.body obj
+  const { items: cartItems, tax, shippingFee } = req.body;
+
+  // condtion cart item not exist and cart length is 1
+  if (!cartItems || cartItems.length < 1) {
+    throw new CustomError.BadRequestError("No cart items provided");
+  }
+
+  // condition if no tax, no shipping fee
+  if (!tax || !shippingFee) {
+    throw new CustomError.BadRequestError(
+      "Please provide tax and shipping fee"
+    );
+  }
+
+  let orderItems = [];
+  let subtotal = 0;
+
+  for (const item of cartItems) {
+    const dbProduct = await Product.findOne({ _id: item.product });
+
+    // if product is missing
+    if (!dbProduct) {
+      throw new CustomError.NotFoundError(
+        `No product with id : ${item.product}`
+      );
+    }
+
+    const { name, price, image, _id } = dbProduct;
+
+    // setup single item order obj
+    const singleOrderItem = {
+      amount: item.amount,
+      name,
+      price,
+      image,
+      product: _id,
+    };
+
+    // add item to order
+    orderItems = [...orderItems, singleOrderItem];
+    // calculate subtotal
+    subtotal += item.amount * price;
+  }
+
+  // calculate total
+  const total = tax + shippingFee + subtotal;
+
+  // get client secret
+  const paymentIntent = await fakeStripeAPI({
+    amount: total,
+    currency: "usd",
+  });
+
+  const order = await Order.create({
+    orderItems,
+    total,
+    subtotal,
+    tax,
+    shippingFee,
+    clientSecret: paymentIntent.client_secret,
+    user: req.user.userId,
+  });
+
+  res
+    .status(StatusCodes.CREATED)
+    .json({ order, clientSecret: order.clientSecret });
+};
+
+const getAllOrders = async (req, res) => {
+  res.send("get all order");
+};
+
+const getSingleOrder = async (req, res) => {
+  res.send("get single order");
+};
+
+const getCurrentUserOrders = async (req, res) => {
+  res.send("get current user order");
+};
+
+const updateOrder = async (req, res) => {
+  res.send("update order");
+};
+
+module.exports = {
+  getAllOrders,
+  getSingleOrder,
+  getCurrentUserOrders,
+  createOrder,
+  updateOrder,
+};
+```
 
 <br>
 
@@ -5233,6 +5643,154 @@ module.exports = mongoose.model("Order", OrderSchema);
 - [] set paymentIntentId and status as 'paid'
 - [] order.save()
 
+- In controllers/orderController.js
+
+```js
+const Order = require("../models/Order");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const fakeStripeAPI = async ({ amount, currency }) => {
+  const client_secret = "someRandomValue";
+  return { client_secret, amount };
+};
+
+const createOrder = async (req, res) => {
+  // destructuring req.body obj
+  const { items: cartItems, tax, shippingFee } = req.body;
+
+  // condtion cart item not exist and cart length is 1
+  if (!cartItems || cartItems.length < 1) {
+    throw new CustomError.BadRequestError("No cart items provided");
+  }
+
+  // condition if no tax, no shipping fee
+  if (!tax || !shippingFee) {
+    throw new CustomError.BadRequestError(
+      "Please provide tax and shipping fee"
+    );
+  }
+
+  let orderItems = [];
+  let subtotal = 0;
+
+  for (const item of cartItems) {
+    const dbProduct = await Product.findOne({ _id: item.product });
+
+    // if product is missing
+    if (!dbProduct) {
+      throw new CustomError.NotFoundError(
+        `No product with id : ${item.product}`
+      );
+    }
+
+    const { name, price, image, _id } = dbProduct;
+
+    // setup single item order obj
+    const singleOrderItem = {
+      amount: item.amount,
+      name,
+      price,
+      image,
+      product: _id,
+    };
+
+    // add item to order
+    orderItems = [...orderItems, singleOrderItem];
+    // calculate subtotal
+    subtotal += item.amount * price;
+  }
+
+  // calculate total
+  const total = tax + shippingFee + subtotal;
+
+  // get client secret
+  const paymentIntent = await fakeStripeAPI({
+    amount: total,
+    currency: "usd",
+  });
+
+  const order = await Order.create({
+    orderItems,
+    total,
+    subtotal,
+    tax,
+    shippingFee,
+    clientSecret: paymentIntent.client_secret,
+    user: req.user.userId,
+  });
+
+  res
+    .status(StatusCodes.CREATED)
+    .json({ order, clientSecret: order.clientSecret });
+};
+
+const getAllOrders = async (req, res) => {
+  const orders = await Order.find({});
+  res.status(StatusCodes.OK).json({ orders, count: orders.length });
+};
+
+const getSingleOrder = async (req, res) => {
+  const { id: orderId } = req.params;
+  const order = await Order.findOne({ _id: orderId });
+  if (!order) {
+    throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
+  }
+  checkPermissions(req.user, order.user);
+  res.status(StatusCodes.OK).json({ order });
+};
+
+const getCurrentUserOrders = async (req, res) => {
+  const orders = await Order.find({ user: req.user.userId });
+  res.status(StatusCodes.OK).json({ orders, count: orders.length });
+};
+
+const updateOrder = async (req, res) => {
+  const { id: orderId } = req.params;
+  const { paymentIntentId } = req.body;
+
+  const order = await Order.findOne({ _id: orderId });
+  if (!order) {
+    throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
+  }
+  checkPermissions(req.user, order.user);
+
+  order.paymentIntentId = paymentIntentId;
+  order.status = "paid";
+  await order.save();
+
+  res.status(StatusCodes.OK).json({ order });
+};
+
+module.exports = {
+  getAllOrders,
+  getSingleOrder,
+  getCurrentUserOrders,
+  createOrder,
+  updateOrder,
+};
+```
+
+---
+
+- Open postman, Make "Login User" request as admin
+- from order folder make "Get All Order" request
+- from Auth folder make "Login user" request as user
+- from order folder make "Create Order" request, copy order id
+- from order folder make "Get Single Order" request, by pasting order id
+- from order folder make "Show Current User Order" request
+- from order folder make "Update Order" request, by pasting order id
+  - select-> body-> raw-> json
+
+```js
+{
+  "paymentIntentId":"some random ID"
+}
+```
+
 <br>
 
 ### 338. Docgen - Install<a id='338'></a>
@@ -5243,8 +5801,9 @@ module.exports = mongoose.model("Order", OrderSchema);
 
 - [] [Docgen Library] (https://github.com/thedevsaddam/docgen)
 - [] Export Postman Collection
+- [] open postman collecttion on vscode and change {{URL}} ---> http://localhost:5000/
 - [] docgen build -i fileName.json -o index.html
-- [] create index.html in public
+- [] create/move index.html in public
 
 <br>
 
@@ -5255,6 +5814,90 @@ module.exports = mongoose.model("Order", OrderSchema);
 - [] xss-clean
 - [] express-mongo-sanitize
 - [] cors (cookies!!!!)
+
+- app.js
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+
+const express = require("express");
+const app = express();
+
+const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
+const fileUpload = require("express-fileupload");
+// import middleware
+const rateLimiter = require("express-rate-limit");
+const helmet = require("helmet");
+const xss = require("xss-clean");
+const cors = require("cors");
+const mongoSanitize = require("express-mongo-sanitize");
+const connectDB = require("./db/connect");
+
+const authRouter = require("./routes/authRoutes");
+const userRouter = require("./routes/userRoutes");
+const productRouter = require("./routes/productRoutes");
+const reviewRouter = require("./routes/reviewRoutes");
+const orderRouter = require("./routes/orderRoutes");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+// setup middleware
+app.set("trust proxy", 1);
+app.use(
+  rateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+  })
+);
+app.use(helmet());
+app.use(cors());
+app.use(xss());
+app.use(mongoSanitize());
+
+app.use(morgan("tiny"));
+app.use(express.json());
+// access cookie coming back from browser
+app.use(cookieParser(process.env.JWT_SECRET));
+
+app.use(express.static("./public"));
+app.use(fileUpload());
+
+app.get("/", (req, res) => {
+  res.send("e-commerce api");
+});
+
+app.get("/api/v1", (req, res) => {
+  console.log(req.signedCookies);
+  res.send("e-commerce api");
+});
+
+// setup route middleware
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/products", productRouter);
+app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/orders", orderRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 5000;
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URL);
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
 
 <br>
 
