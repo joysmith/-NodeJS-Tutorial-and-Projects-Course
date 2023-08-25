@@ -3778,9 +3778,164 @@ module.exports = mongoose.model("Review", ReviewSchema);
 - [] import reviewRoutes as reviewRouter in the app.js
 - [] setup app.use('/api/v1/reviews', reviewRouter)
 
+- In controllers folder create reviewController.js
+
+```js
+const createReview = async (req, res) => {
+  res.send("create review");
+};
+
+const getAllReviews = async (req, res) => {
+  res.send("get all review");
+};
+
+const getSingleReview = async (req, res) => {
+  res.send("get single review");
+};
+const updateReview = async (req, res) => {
+  res.send("update review");
+};
+
+const deleteReview = async (req, res) => {
+  res.send("delete review");
+};
+
+module.exports = {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+};
+```
+
+---
+
+- In routes folder create reviewRoutes.js
+
+```js
+const express = require("express");
+const router = express.Router();
+const { authenticateUser } = require("../middleware/authentication");
+
+const {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+} = require("../controllers/reviewController");
+
+router.route("/").post(authenticateUser, createReview).get(getAllReviews);
+
+router
+  .route("/:id")
+  .get(getSingleReview)
+  .patch(authenticateUser, updateReview)
+  .delete(authenticateUser, deleteReview);
+
+module.exports = router;
+```
+
+---
+
+- In app.js
+
+```js
+require("dotenv").config();
+require("express-async-errors");
+
+const express = require("express");
+const app = express();
+
+const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
+const fileUpload = require("express-fileupload");
+
+const connectDB = require("./db/connect");
+
+const authRouter = require("./routes/authRoutes");
+const userRouter = require("./routes/userRoutes");
+const productRouter = require("./routes/productRoutes");
+//  import reviw routers
+const reviewRouter = require("./routes/reviewRoutes");
+
+const notFoundMiddleware = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
+app.use(morgan("tiny"));
+app.use(express.json());
+app.use(cookieParser(process.env.JWT_SECRET));
+
+app.use(express.static("./public"));
+app.use(fileUpload());
+
+app.get("/", (req, res) => {
+  res.send("e-commerce api");
+});
+
+app.get("/api/v1", (req, res) => {
+  console.log(req.signedCookies);
+  res.send("e-commerce api");
+});
+
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/products", productRouter);
+// setup review route middleware
+app.use("/api/v1/reviews", reviewRouter);
+
+app.use(notFoundMiddleware);
+app.use(errorHandlerMiddleware);
+
+const port = process.env.PORT || 5000;
+const start = async () => {
+  try {
+    await connectDB(process.env.MONGO_URL);
+    app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+start();
+```
+
 <br>
 
 ### 318. Review Routes - Postman<a id='318'></a>
+
+- Open postman, make "Login User" request and log in as admin
+- In Review folder, setup following method request
+
+---
+
+- get "{{URL}}/reviews"
+  - save as "Get All Reviews", in ecommerce inside Reviews-folder, send request to test connection
+
+---
+
+- post "{{URL}}/reviews"
+  - save as "Create Review", send request to test connection
+
+---
+
+- get "{{URL}}/reviews/id_123"
+  - save as "Get Single Review", send request to test connection
+
+---
+
+- patch "{{URL}}/reviews/id_123"
+  - save as "Update Review", send request to test connection
+
+---
+
+- delete "{{URL}}/reviews/id_123"
+  - save as "Delete Review", send request to test connection
+
+---
 
 <br>
 
@@ -3791,11 +3946,171 @@ module.exports = mongoose.model("Review", ReviewSchema);
 - [] create review
 - [] don't test yet
 
+- In controllers/reviewController.js
+
+```js
+const Review = require("../models/Review");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const createReview = async (req, res) => {
+  const { product: productId } = req.body;
+
+  const isValidProduct = await Product.findOne({ _id: productId });
+
+  if (!isValidProduct) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  // check has user alreay wrote review
+  const alreadySubmitted = await Review.findOne({
+    product: productId,
+    user: req.user.userId,
+  });
+
+  if (alreadySubmitted) {
+    throw new CustomError.BadRequestError(
+      "Already submitted review for this product"
+    );
+  }
+
+  req.body.user = req.user.userId;
+  const review = await Review.create(req.body);
+  res.status(StatusCodes.CREATED).json({ review });
+};
+
+const getAllReviews = async (req, res) => {
+  res.send("get all review");
+};
+
+const getSingleReview = async (req, res) => {
+  res.send("get single review");
+};
+const updateReview = async (req, res) => {
+  res.send("update review");
+};
+
+const deleteReview = async (req, res) => {
+  res.send("delete review");
+};
+
+module.exports = {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+};
+```
+
+---
+
+- Open postman, make "Login User" request and log in as user
+- make "get all product" request from Product-folder, and copy any id
+
+---
+
+- make a "Create Review" request, by pasting id in json obj
+  - select-> body-> raw-> json
+
+```js
+{
+  "product" :"---paste product id here---",
+  "rating" : 1,
+  "title": "bad product",
+  "comment" : "very very bad product"
+}
+```
+
+- send & send again
+
 <br>
 
 ### 320. Get All Reviews and Get Single Review Controller<a id='320'></a>
 
 - [] both public routes, typical setup
+
+- In controllers/reviewController.js
+
+```js
+const Review = require("../models/Review");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const createReview = async (req, res) => {
+  const { product: productId } = req.body;
+
+  const isValidProduct = await Product.findOne({ _id: productId });
+
+  if (!isValidProduct) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  // check has user alreay wrote review
+  const alreadySubmitted = await Review.findOne({
+    product: productId,
+    user: req.user.userId,
+  });
+
+  if (alreadySubmitted) {
+    throw new CustomError.BadRequestError(
+      "Already submitted review for this product"
+    );
+  }
+
+  req.body.user = req.user.userId;
+  const review = await Review.create(req.body);
+  res.status(StatusCodes.CREATED).json({ review });
+};
+
+// getAllReviews
+const getAllReviews = async (req, res) => {
+  const reviews = await Review.find({});
+
+  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
+};
+
+// getSingleReview
+const getSingleReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ review });
+};
+
+const updateReview = async (req, res) => {
+  res.send("update review");
+};
+
+const deleteReview = async (req, res) => {
+  res.send("delete review");
+};
+
+module.exports = {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+};
+```
+
+---
+
+- Open postman, make "Login User" request and log in as user
+- make "get all review" request from Review-folder, and copy any id
+- make a "Get Single Review" request, by pasting id
 
 <br>
 
@@ -3807,6 +4122,98 @@ module.exports = mongoose.model("Review", ReviewSchema);
 - [] check permissions (req.user, review.user)
 - [] use await review.remove()
 - [] send back 200
+
+- In controllers/reviewControllers.js
+
+```js
+const Review = require("../models/Review");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const createReview = async (req, res) => {
+  const { product: productId } = req.body;
+
+  const isValidProduct = await Product.findOne({ _id: productId });
+
+  if (!isValidProduct) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  // check has user alreay wrote review
+  const alreadySubmitted = await Review.findOne({
+    product: productId,
+    user: req.user.userId,
+  });
+
+  if (alreadySubmitted) {
+    throw new CustomError.BadRequestError(
+      "Already submitted review for this product"
+    );
+  }
+
+  req.body.user = req.user.userId;
+  const review = await Review.create(req.body);
+  res.status(StatusCodes.CREATED).json({ review });
+};
+
+const getAllReviews = async (req, res) => {
+  const reviews = await Review.find({});
+
+  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
+};
+
+const getSingleReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ review });
+};
+
+const updateReview = async (req, res) => {
+  res.send("update review");
+};
+
+// delete review
+const deleteReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  checkPermissions(req.user, review.user);
+  await review.remove();
+  res.status(StatusCodes.OK).json({ msg: "Success! Review removed" });
+};
+
+module.exports = {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+};
+```
+
+---
+
+- Open postman, make "Login User" request and log in as user
+- make "get all review" request from Review-folder, and copy any id
+- make a "Delete Review" request, by pasting id
+
+---
+
+- now make new review using diff user for further tesring
 
 <br>
 
@@ -3821,41 +4228,875 @@ module.exports = mongoose.model("Review", ReviewSchema);
 - [] use await review.save()
 - [] send back 200
 
+- In controllers/reviewController.js
+
+```js
+const Review = require("../models/Review");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const createReview = async (req, res) => {
+  const { product: productId } = req.body;
+
+  const isValidProduct = await Product.findOne({ _id: productId });
+
+  if (!isValidProduct) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  // check has user alreay wrote review
+  const alreadySubmitted = await Review.findOne({
+    product: productId,
+    user: req.user.userId,
+  });
+
+  if (alreadySubmitted) {
+    throw new CustomError.BadRequestError(
+      "Already submitted review for this product"
+    );
+  }
+
+  req.body.user = req.user.userId;
+  const review = await Review.create(req.body);
+  res.status(StatusCodes.CREATED).json({ review });
+};
+
+const getAllReviews = async (req, res) => {
+  const reviews = await Review.find({});
+
+  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
+};
+
+const getSingleReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ review });
+};
+
+// update review
+const updateReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+  const { rating, title, comment } = req.body;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  checkPermissions(req.user, review.user);
+
+  review.rating = rating;
+  review.title = title;
+  review.comment = comment;
+
+  await review.save();
+  res.status(StatusCodes.OK).json({ review });
+};
+
+const deleteReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  checkPermissions(req.user, review.user);
+  await review.remove();
+  res.status(StatusCodes.OK).json({ msg: "Success! Review removed" });
+};
+
+module.exports = {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+};
+```
+
+---
+
+- Open postman, make "Login User" request and log in as user
+- make "create review" request from Review-folder, and copy id
+- make a "Update Review" request, by pasting id
+  - select-> body-> raw-> json
+
+```js
+{
+  "rating" : 5,
+  "title": "good product",
+  "comment" : "very very good product by user_name"
+}
+```
+
 <br>
 
 ### 323. Populate Method<a id='323'></a>
+
+- In controllers/reviewController.js
+
+```js
+const Review = require("../models/Review");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const createReview = async (req, res) => {
+  const { product: productId } = req.body;
+
+  const isValidProduct = await Product.findOne({ _id: productId });
+
+  if (!isValidProduct) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  // check has user alreay wrote review
+  const alreadySubmitted = await Review.findOne({
+    product: productId,
+    user: req.user.userId,
+  });
+
+  if (alreadySubmitted) {
+    throw new CustomError.BadRequestError(
+      "Already submitted review for this product"
+    );
+  }
+
+  req.body.user = req.user.userId;
+  const review = await Review.create(req.body);
+  res.status(StatusCodes.CREATED).json({ review });
+};
+
+const getAllReviews = async (req, res) => {
+  // using populate method, to get property from other document like product
+  const reviews = await Review.find({}).populate({
+    path: "product",
+    select: "name company price",
+  });
+
+  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
+};
+
+const getSingleReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ review });
+};
+
+const updateReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+  const { rating, title, comment } = req.body;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  checkPermissions(req.user, review.user);
+
+  review.rating = rating;
+  review.title = title;
+  review.comment = comment;
+
+  await review.save();
+  res.status(StatusCodes.OK).json({ review });
+};
+
+const deleteReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  checkPermissions(req.user, review.user);
+  await review.remove();
+  res.status(StatusCodes.OK).json({ msg: "Success! Review removed" });
+};
+
+module.exports = {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+};
+```
+
+- Open postman, make "Get all review" request from Review-folder
 
 <br>
 
 ### 324. Mongoose Virtuals<a id='324'></a>
 
+- In models/product.js
+
+```js
+const mongoose = require("mongoose");
+
+const ProductSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide product name"],
+      maxlength: [100, "Name can not be more than 100 characters"],
+    },
+    price: {
+      type: Number,
+      required: [true, "Please provide product price"],
+      default: 0,
+    },
+    description: {
+      type: String,
+      required: [true, "Please provide product description"],
+      maxlength: [1000, "Description can not be more than 1000 characters"],
+    },
+    image: {
+      type: String,
+      default: "/uploads/example.jpeg",
+    },
+    category: {
+      type: String,
+      required: [true, "Please provide product category"],
+      enum: ["office", "kitchen", "bedroom"],
+    },
+    company: {
+      type: String,
+      required: [true, "Please provide company"],
+      enum: {
+        values: ["ikea", "liddy", "marcos"],
+        message: "{VALUE} is not supported",
+      },
+    },
+    colors: {
+      type: [String],
+      default: ["#222"],
+      required: true,
+    },
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+    freeShipping: {
+      type: Boolean,
+      default: false,
+    },
+    inventory: {
+      type: Number,
+      required: true,
+      default: 15,
+    },
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+    numOfReviews: {
+      type: Number,
+      default: 0,
+    },
+    user: {
+      type: mongoose.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  // make it virtual
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
+// virtual property
+ProductSchema.virtual("reviews", {
+  ref: "Review",
+  localField: "_id",
+  foreignField: "product",
+  justOne: false,
+});
+
+module.exports = mongoose.model("Product", ProductSchema);
+```
+
+---
+
+- Open postman, make "Login User" request and log in as user
+- make "Get All Review" request from Review-folder, and copy "product" id
+- from Product-folder make a "Get Single Product" request, by pasting id
+
 <br>
 
 ### 325. Alternative Single Product Reviews<a id='325'></a>
+
+- In controllers/reviewController.js
+
+```js
+const Review = require("../models/Review");
+const Product = require("../models/Product");
+
+const { StatusCodes } = require("http-status-codes");
+const CustomError = require("../errors");
+const { checkPermissions } = require("../utils");
+
+const createReview = async (req, res) => {
+  const { product: productId } = req.body;
+
+  const isValidProduct = await Product.findOne({ _id: productId });
+
+  if (!isValidProduct) {
+    throw new CustomError.NotFoundError(`No product with id : ${productId}`);
+  }
+
+  // check has user alreay wrote review
+  const alreadySubmitted = await Review.findOne({
+    product: productId,
+    user: req.user.userId,
+  });
+
+  if (alreadySubmitted) {
+    throw new CustomError.BadRequestError(
+      "Already submitted review for this product"
+    );
+  }
+
+  req.body.user = req.user.userId;
+  const review = await Review.create(req.body);
+  res.status(StatusCodes.CREATED).json({ review });
+};
+
+const getAllReviews = async (req, res) => {
+  const reviews = await Review.find({}).populate({
+    path: "product",
+    select: "name company price",
+  });
+
+  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
+};
+
+const getSingleReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ review });
+};
+
+const updateReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+  const { rating, title, comment } = req.body;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  checkPermissions(req.user, review.user);
+
+  review.rating = rating;
+  review.title = title;
+  review.comment = comment;
+
+  await review.save();
+  res.status(StatusCodes.OK).json({ review });
+};
+
+const deleteReview = async (req, res) => {
+  const { id: reviewId } = req.params;
+
+  const review = await Review.findOne({ _id: reviewId });
+
+  if (!review) {
+    throw new CustomError.NotFoundError(`No review with id ${reviewId}`);
+  }
+
+  checkPermissions(req.user, review.user);
+  await review.remove();
+  res.status(StatusCodes.OK).json({ msg: "Success! Review removed" });
+};
+
+// getSingleProductReviews
+const getSingleProductReviews = async (req, res) => {
+  const { id: productId } = req.params;
+  const reviews = await Review.find({ product: productId });
+  res.status(StatusCodes.OK).json({ reviews, count: reviews.length });
+};
+
+module.exports = {
+  createReview,
+  getAllReviews,
+  getSingleReview,
+  updateReview,
+  deleteReview,
+  getSingleProductReviews,
+};
+```
+
+---
+
+- In routes/productRoutes.js
+
+```js
+const express = require("express");
+const router = express.Router();
+const {
+  authenticateUser,
+  authorizePermissions,
+} = require("../middleware/authentication");
+
+const {
+  createProduct,
+  getAllProducts,
+  getSingleProduct,
+  updateProduct,
+  deleteProduct,
+  uploadImage,
+} = require("../controllers/productController");
+
+// import getSingleProductReviews from review
+const { getSingleProductReviews } = require("../controllers/reviewController");
+
+router
+  .route("/")
+  .post([authenticateUser, authorizePermissions("admin")], createProduct)
+  .get(getAllProducts);
+
+router
+  .route("/uploadImage")
+  .post([authenticateUser, authorizePermissions("admin")], uploadImage);
+
+router
+  .route("/:id")
+  .get(getSingleProduct)
+  .patch([authenticateUser, authorizePermissions("admin")], updateProduct)
+  .delete([authenticateUser, authorizePermissions("admin")], deleteProduct);
+
+// setup as route
+router.route("/:id/reviews").get(getSingleProductReviews);
+
+module.exports = router;
+```
+
+- Open postman, In Product-folder create new route
+  - Get "{{URL}}/products//reviews" save as "Get Single Product Review"
+- make "Get All Review" request from Review-folder, and copy "product" id
+- from Product-folder make a "Get Single Product" request by pasting id
+  - "{{URL}}/products/id123/reviews" save as "Get Single Product Review"
 
 <br>
 
 ### 326. Remove All Reviews<a id='326'></a>
 
+- In models/product.js
+
+```js
+const mongoose = require("mongoose");
+
+const ProductSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide product name"],
+      maxlength: [100, "Name can not be more than 100 characters"],
+    },
+    price: {
+      type: Number,
+      required: [true, "Please provide product price"],
+      default: 0,
+    },
+    description: {
+      type: String,
+      required: [true, "Please provide product description"],
+      maxlength: [1000, "Description can not be more than 1000 characters"],
+    },
+    image: {
+      type: String,
+      default: "/uploads/example.jpeg",
+    },
+    category: {
+      type: String,
+      required: [true, "Please provide product category"],
+      enum: ["office", "kitchen", "bedroom"],
+    },
+    company: {
+      type: String,
+      required: [true, "Please provide company"],
+      enum: {
+        values: ["ikea", "liddy", "marcos"],
+        message: "{VALUE} is not supported",
+      },
+    },
+    colors: {
+      type: [String],
+      default: ["#222"],
+      required: true,
+    },
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+    freeShipping: {
+      type: Boolean,
+      default: false,
+    },
+    inventory: {
+      type: Number,
+      required: true,
+      default: 15,
+    },
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+    numOfReviews: {
+      type: Number,
+      default: 0,
+    },
+    user: {
+      type: mongoose.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
+ProductSchema.virtual("reviews", {
+  ref: "Review",
+  localField: "_id",
+  foreignField: "product",
+  justOne: false,
+});
+
+// remove all review associated to this product
+ProductSchema.pre("remove", async function (next) {
+  await this.model("Review").deleteMany({ product: this._id });
+});
+
+module.exports = mongoose.model("Product", ProductSchema);
+```
+
+--
+
+- Open postman, make "Login User" request and log in as admin
+- make "Get All Review" request from Review-folder, and copy "product" id
+- from Product-folder make a "Delete Product" request, by pasting id
+- make "Get All Review" request from Review-folder, to ckeck associated review deleted product has gone
+
 <br>
 
 ### 327. Aggregate Pipeline - Setup<a id='327'></a>
+
+- In models/review.js
+
+```js
+const mongoose = require("mongoose");
+
+const ReviewSchema = mongoose.Schema(
+  {
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: [true, "Please provide rating"],
+    },
+
+    title: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide review title"],
+      maxlength: 100,
+    },
+
+    comment: {
+      type: String,
+      required: [true, "Please provide review text"],
+    },
+
+    // reference user id
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    // reference product id
+    product: {
+      type: mongoose.Schema.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+  },
+
+  { timestamps: true }
+);
+
+// user can leave one revie on 1 product
+ReviewSchema.index({ product: 1, user: 1 }, { unique: true });
+
+ReviewSchema.statics.calculateAverageRating = async function (productId) {
+  const result = await this.aggregate([
+    { $match: { product: productId } },
+    {
+      $group: {
+        _id: null,
+        averageRating: { $avg: "$rating" },
+        numOfReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  try {
+    await this.model("Product").findOneAndUpdate(
+      { _id: productId },
+      {
+        averageRating: Math.ceil(result[0]?.averageRating || 0),
+        numOfReviews: result[0]?.numOfReviews || 0,
+      }
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+ReviewSchema.post("save", async function () {
+  await this.constructor.calculateAverageRating(this.product);
+});
+
+ReviewSchema.post("remove", async function () {
+  await this.constructor.calculateAverageRating(this.product);
+});
+
+module.exports = mongoose.model("Review", ReviewSchema);
+```
 
 <br>
 
 ### 328. Reset Database<a id='328'></a>
 
+- Open postman, make "Login User" request and log in as admin
+- from Product-folder make a "Get All Products" request, copy id
+- from Product-folder make a "Delete Products" request, by pasting id
+- Repeate for all product till nothing left
+
+---
+
+- from Product-folder make a "Create Products" request
+  - select-> body-> raw-> json
+
+```js
+  {
+    "name": "product number 1",
+    "price": 109999,
+    "image": "https://dl.airtable.com/.attachmentThumbnails/0be1af59cf889899b5c9abb1e4db38a4/d631ac52",
+    "colors": ["#000", "#ffb900"],
+    "company": "liddy",
+    "description": "Cloud bread VHS hell of banjo bicycle rights jianbing umami mumblecore etsy 8-bit pok pok +1 wolf. Vexillologist yr dreamcatcher waistcoat, authentic chillwave trust fund. Viral typewriter fingerstache pinterest pork belly narwhal. Schlitz venmo everyday carry kitsch pitchfork chillwave iPhone taiyaki trust fund hashtag kinfolk microdosing gochujang live-edge",
+    "category": "kitchen"
+  }
+```
+
+- from Product-folder make a "Get All Products" request, copy id
+- from Review-folder make a "Create Review" request, by pasting id
+  - select-> body-> raw-> json
+
+```js
+{
+  "product":"-----paste id here, product number 1-----",
+  "rating": 5,
+  "title":"very good product",
+  "comment":"very,very good product"
+}
+```
+
+---
+
+- Open postman, make "Login User" request and log in as user
+- from Review-folder make a "Create Review" request, by pasting id
+  - select-> body-> raw-> json
+
+```js
+{
+  "product":"-----paste id here, product number 1-----",
+  "rating": 1,
+  "title":"very good product",
+  "comment":"very,very good product"
+}
+```
+
+- from Review-folder make a "Get All Review" request
+
 <br>
 
 ### 329. Aggregate Pipeline - Atlas<a id='329'></a>
+
+- Open to Atlas mongodb
+- go to "10-e-commerce"-> review-> Aggreation-> $match
+
+```js
+
+{
+  "product":ObjectID('--paste product here---')
+}
+```
+
+---
+
+- click "Add Stage"
+- $group
+
+```js
+{
+  _id:null,
+  averageRating:{$avg"$rating"},
+  numberOfReviews:{$sum:1}
+}
+```
+
+---
+
+- Export pipeline code language-> NODE
+  - ✅ inclue import statement
+  - ✅ include driver syntax
+  - COPY
+- In models create temp.js file, for ref purpose
 
 <br>
 
 ### 330. Aggregate Pipeline - Review Model<a id='330'></a>
 
+- In models/review.js
+
+```js
+const mongoose = require("mongoose");
+
+const ReviewSchema = mongoose.Schema(
+  {
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: [true, "Please provide rating"],
+    },
+
+    title: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide review title"],
+      maxlength: 100,
+    },
+
+    comment: {
+      type: String,
+      required: [true, "Please provide review text"],
+    },
+
+    // reference user id
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    // reference product id
+    product: {
+      type: mongoose.Schema.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+  },
+
+  { timestamps: true }
+);
+
+ReviewSchema.index({ product: 1, user: 1 }, { unique: true });
+
+ReviewSchema.statics.calculateAverageRating = async function (productId) {
+  // copy and paste from temp-file and edit value
+  const result = await this.aggregate([
+    { $match: { product: productId } },
+    {
+      $group: {
+        _id: null,
+        averageRating: { $avg: "$rating" },
+        numOfReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  try {
+    await this.model("Product").findOneAndUpdate(
+      { _id: productId },
+      {
+        averageRating: Math.ceil(result[0]?.averageRating || 0),
+        numOfReviews: result[0]?.numOfReviews || 0,
+      }
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+ReviewSchema.post("save", async function () {
+  await this.constructor.calculateAverageRating(this.product);
+});
+
+ReviewSchema.post("remove", async function () {
+  await this.constructor.calculateAverageRating(this.product);
+});
+
+module.exports = mongoose.model("Review", ReviewSchema);
+```
+
 <br>
 
 ### 331. Additional Group ID Example<a id='331'></a>
+
+- Open to Atlas mongodb
+- go to "10-e-commerce"-> review-> Aggreation-> $match
+
+```js
+
+{
+  "product":ObjectID('--paste product here---')
+}
+```
+
+---
+
+- click "Add Stage"
+- $group
+
+```js
+{
+  _id:"$rating",
+  amount:{$sum:1},
+}
+```
 
 <br>
 
@@ -3874,6 +5115,77 @@ module.exports = mongoose.model("Review", ReviewSchema);
 - [] paymentId:{type:String}
 - [] set timestamps
 - [] export Order model
+
+- In models folder crate Order.js file
+
+```js
+const mongoose = require("mongoose");
+
+const SingleOrderItemSchema = mongoose.Schema({
+  name: { type: String, required: true },
+  image: { type: String, required: true },
+  price: { type: Number, required: true },
+  amount: { type: Number, required: true },
+  // associate with product ref
+  product: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Product",
+    required: true,
+  },
+});
+
+const OrderSchema = mongoose.Schema(
+  {
+    tax: {
+      type: Number,
+      required: true,
+    },
+
+    shippingFee: {
+      type: Number,
+      required: true,
+    },
+
+    subtotal: {
+      type: Number,
+      required: true,
+    },
+
+    total: {
+      type: Number,
+      required: true,
+    },
+
+    // passing seprate schema
+    orderItems: [SingleOrderItemSchema],
+
+    status: {
+      type: String,
+      enum: ["pending", "failed", "paid", "delivered", "canceled"],
+      default: "pending",
+    },
+
+    user: {
+      // associate with user ref
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    clientSecret: {
+      type: String,
+      required: true,
+    },
+
+    paymentIntentId: {
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Order", OrderSchema);
+```
 
 <br>
 
